@@ -254,7 +254,10 @@ def serve_admin():
 @app.route('/api/admin/users')
 def api_admin_users():
     admin_key = request.headers.get('X-Admin-Key')
-    if admin_key != 'admin123':
+    expected_key = os.environ.get('ADMIN_KEY')
+    if not expected_key:
+        return jsonify({'success': False, 'message': 'Admin panel is disabled. Please configure ADMIN_KEY in your Render environment settings.'}), 503
+    if admin_key != expected_key:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     
     conn = get_db()

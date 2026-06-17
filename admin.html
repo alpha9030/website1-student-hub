@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -198,8 +198,12 @@
                 const response = await fetch(`${apiBase}/api/admin/users`, {
                     headers: { 'X-Admin-Key': key }
                 });
+                const data = await response.json().catch(() => ({}));
+                if (response.status === 503) {
+                    alert(data.message || "Admin panel is currently disabled.");
+                    return false;
+                }
                 if (!response.ok) return false;
-                const data = await response.json();
                 if (data.success) {
                     renderUsersTable(data.users);
                     return true;
