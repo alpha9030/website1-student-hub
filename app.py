@@ -245,6 +245,37 @@ def api_delete_account():
     conn.close()
     return jsonify({'success': True, 'message': 'Account and all data permanently deleted'})
 
+# Admin Views and APIs
+
+@app.route('/admin')
+def serve_admin():
+    return send_from_directory('.', 'admin.html')
+
+@app.route('/api/admin/users')
+def api_admin_users():
+    admin_key = request.headers.get('X-Admin-Key')
+    if admin_key != 'admin123':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, email, grade, dept FROM users')
+    users = cursor.fetchall()
+    
+    user_list = []
+    for u in users:
+        cursor.execute('SELECT COUNT(*) FROM progress WHERE email = ?', (u['email'],))
+        prog_count = cursor.fetchone()[0]
+        user_list.append({
+            'username': u['username'],
+            'email': u['email'],
+            'grade': u['grade'],
+            'dept': u['dept'],
+            'progress_count': prog_count
+        })
+    conn.close()
+    return jsonify({'success': True, 'users': user_list})
+
 # Catch-all to serve any static asset (js, css, images)
 @app.route('/<path:path>')
 def serve_static(path):
