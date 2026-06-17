@@ -284,7 +284,8 @@ def api_admin_users():
 def serve_static(path):
     return send_from_directory('.', path)
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     print("Database initialized.")
     app.run(host='0.0.0.0', port=443, ssl_context='adhoc', debug=True)
