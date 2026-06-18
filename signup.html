@@ -343,7 +343,7 @@
                     const otpResp = await fetch(`${apiBase}/api/send-otp`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: emailVal })
+                        body: JSON.stringify({ email: emailVal.toLowerCase() })
                     });
                     const otpData = await otpResp.json();
                     if (!otpData.success) {
@@ -365,9 +365,9 @@
 
             let userEnteredOTP = null;
             if (isSimulated) {
-                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nWe simulated sending a 6-digit verification code to:\n" + emailVal + "\n\nFor this sandbox demonstration, your simulated OTP is:\n👉 " + otpCode + " 👈\n\nPlease enter the code below to verify your identity and create your account:");
+                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nWe simulated sending a 6-digit verification code to:\n" + emailVal.toLowerCase() + "\n\nFor this sandbox demonstration, your simulated OTP is:\n👉 " + otpCode + " 👈\n\nPlease enter the code below to verify your identity and create your account:");
             } else {
-                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nA 6-digit verification code has been sent to your email address:\n" + emailVal + "\n\nPlease enter the code below to verify your identity and create your account:");
+                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nA 6-digit verification code has been sent to your email address:\n" + emailVal.toLowerCase() + "\n\nPlease enter the code below to verify your identity and create your account:");
             }
 
             if (userEnteredOTP === null) {
@@ -389,7 +389,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             username: usernameVal,
-                            email: emailVal,
+                            email: emailVal.toLowerCase(),
                             password: pwdVal,
                             grade: gradeVal,
                             dept: deptVal,
@@ -401,17 +401,18 @@
                         localStorage.setItem('studentName', usernameVal);
                         localStorage.setItem('studentGrade', gradeVal);
                         localStorage.setItem('studentDept', deptVal);
-                        localStorage.setItem('studentEmail', emailVal);
+                        localStorage.setItem('studentEmail', emailVal.toLowerCase());
                         localStorage.setItem('isLoggedIn', 'true');
 
                         // Also add to local registeredUsers list so offline works later
                         let users = [];
                         try { users = JSON.parse(localStorage.getItem('registeredUsers') || '[]'); } catch(e) { users = []; }
                         if (!Array.isArray(users)) users = [];
-                        if (!users.some(u => u.email === emailVal)) {
+                        const cleanEmail = emailVal.toLowerCase();
+                        if (!users.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
                             users.push({
                                 username: usernameVal,
-                                email: emailVal,
+                                email: cleanEmail,
                                 password: pwdVal,
                                 grade: gradeVal,
                                 dept: deptVal
@@ -434,14 +435,15 @@
             let users = [];
             try { users = JSON.parse(localStorage.getItem('registeredUsers') || '[]'); } catch(e) { users = []; }
             if (!Array.isArray(users)) users = [];
-            if (users.some(u => u.email === emailVal)) {
+            const cleanEmail = emailVal.toLowerCase();
+            if (users.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
                 alert("An account with this email address is already registered.");
                 return false;
             }
 
             const newUser = {
                 username: usernameVal,
-                email: emailVal,
+                email: cleanEmail,
                 password: pwdVal,
                 grade: gradeVal,
                 dept: deptVal,
@@ -453,7 +455,7 @@
             localStorage.setItem('studentName', usernameVal);
             localStorage.setItem('studentGrade', gradeVal);
             localStorage.setItem('studentDept', deptVal);
-            localStorage.setItem('studentEmail', emailVal);
+            localStorage.setItem('studentEmail', cleanEmail);
             localStorage.setItem('isLoggedIn', 'true');
             
             // Redirect back to index.html #dashboard
@@ -468,7 +470,7 @@
                 let users = [];
                 try { users = JSON.parse(localStorage.getItem('registeredUsers') || '[]'); } catch(e) { users = []; }
                 if (!Array.isArray(users)) users = [];
-                const uIdx = users.findIndex(u => u.email === email);
+                const uIdx = users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
                 if (uIdx !== -1) {
                     const progressKeys = [];
                     for (let i = 0; i < localStorage.length; i++) {
@@ -531,7 +533,7 @@
                     let users = [];
                     try { users = JSON.parse(usersJson) || []; } catch(e) { users = []; }
                     if (!Array.isArray(users)) users = [];
-                    const userToDelete = users.find(u => u.email === currentEmail);
+                    const userToDelete = users.find(u => (u.email || '').toLowerCase() === currentEmail.toLowerCase());
                     if (userToDelete) {
                         const deletedUsers = JSON.parse(localStorage.getItem('deletedUsers') || '[]');
                         if (!deletedUsers.some(d => d.email === currentEmail)) {

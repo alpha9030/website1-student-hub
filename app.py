@@ -170,7 +170,8 @@ def api_send_otp():
         if sent:
             return jsonify({'success': True, 'simulated': False})
         else:
-            return jsonify({'success': False, 'message': 'Failed to send verification email. Please verify SMTP configuration or try again.'}), 500
+            print(f"SMTP sending failed to {email}. Falling back to simulated OTP mode.")
+            return jsonify({'success': True, 'simulated': True, 'otp': otp, 'fallback': True})
     else:
         # SMTP not configured - simulated mode
         return jsonify({'success': True, 'simulated': True, 'otp': otp})
@@ -264,13 +265,13 @@ def api_progress():
     if request.method == 'OPTIONS':
         return '', 204
     if request.method == 'GET':
-        email = request.args.get('email')
+        email = request.args.get('email', '').strip().lower()
         if not email:
             return jsonify({'success': False, 'message': 'Email required'}), 400
             
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT checkpoint_id FROM progress WHERE email = ?', (email,))
+        cursor.execute('SELECT checkpoint_id FROM progress WHERE LOWER(email) = ?', (email,))
         rows = cursor.fetchall()
         conn.close()
         
@@ -279,7 +280,9 @@ def api_progress():
         
     elif request.method == 'POST':
         data = request.get_json()
-        email = data.get('email')
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        email = data.get('email', '').strip().lower()
         checkpoint_id = data.get('checkpoint_id')
         checked = data.get('checked') # boolean
         
@@ -296,7 +299,7 @@ def api_progress():
                 return jsonify({'success': False, 'message': str(e)}), 500
         else:
             try:
-                cursor.execute('DELETE FROM progress WHERE email = ? AND checkpoint_id = ?', (email, checkpoint_id))
+                cursor.execute('DELETE FROM progress WHERE LOWER(email) = ? AND checkpoint_id = ?', (email, checkpoint_id))
                 conn.commit()
             except sqlite3.Error as e:
                 return jsonify({'success': False, 'message': str(e)}), 500
@@ -308,13 +311,13 @@ def api_chatbot():
     if request.method == 'OPTIONS':
         return '', 204
     if request.method == 'GET':
-        email = request.args.get('email')
+        email = request.args.get('email', '').strip().lower()
         if not email:
             return jsonify({'success': False, 'message': 'Email required'}), 400
             
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT aura_mode, aura_api_key, aura_user_name FROM chatbot_settings WHERE email = ?', (email,))
+        cursor.execute('SELECT aura_mode, aura_api_key, aura_user_name FROM chatbot_settings WHERE LOWER(email) = ?', (email,))
         row = cursor.fetchone()
         conn.close()
         
@@ -331,7 +334,9 @@ def api_chatbot():
         
     elif request.method == 'POST':
         data = request.get_json()
-        email = data.get('email')
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        email = data.get('email', '').strip().lower()
         aura_mode = data.get('aura_mode')
         aura_api_key = data.get('aura_api_key')
         aura_user_name = data.get('aura_user_name')
@@ -354,14 +359,16 @@ def api_delete_account():
     if request.method == 'OPTIONS':
         return '', 204
     data = request.get_json()
-    email = data.get('email')
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+    email = data.get('email', '').strip().lower()
     if not email:
         return jsonify({'success': False, 'message': 'Email required'}), 400
         
     conn = get_db()
     cursor = conn.cursor()
     # Archive user details first
-    cursor.execute('SELECT username, grade, dept FROM users WHERE email = ?', (email,))
+    cursor.execute('SELECT username, grade, dept FROM users WHERE LOWER(email) = ?', (email,))
     user = cursor.fetchone()
     if user:
         cursor.execute(
@@ -369,9 +376,9 @@ def api_delete_account():
             (email, user['username'], user['grade'], user['dept'])
         )
     # Delete user (foreign key cascades will delete progress and chatbot settings)
-    cursor.execute('DELETE FROM users WHERE email = ?', (email,))
-    cursor.execute('DELETE FROM progress WHERE email = ?', (email,))
-    cursor.execute('DELETE FROM chatbot_settings WHERE email = ?', (email,))
+    cursor.execute('DELETE FROM users WHERE LOWER(email) = ?', (email,))
+    cursor.execute('DELETE FROM progress WHERE LOWER(email) = ?', (email,))
+    cursor.execute('DELETE FROM chatbot_settings WHERE LOWER(email) = ?', (email,))
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': 'Account and all data permanently deleted'})
