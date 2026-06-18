@@ -17,97 +17,97 @@
    1. THEME VARIABLES DEFINITIONS
    ========================================================================== */
 :root {
-    /* DEFAULT BLUE THEME COLORS */
-    --bg-body: #eef2f7;
+    /* DEFAULT AMETHYST & LAVENDER THEME COLORS */
+    --bg-body: #f5f3ff;
     --text-body: #222222;
-    --text-muted: #757575;
+    --text-muted: #6b7280;
     
-    --primary-color: #3b82f6;       /* Soft Blue */
-    --primary-dark: #1d4ed8;        /* Darker Blue */
-    --border-color: #9fb8c9;        /* Gray-blue border */
+    --primary-color: #8b5cf6;       /* Soft Violet */
+    --primary-dark: #6d28d9;        /* Royal Purple */
+    --border-color: #d4c5e2;        /* Lavender-gray border */
     
     --bg-container: #ffffff;
-    --bg-card: #fafcfe;
+    --bg-card: #faf9fe;
     
     /* Navigation Bar */
-    --nav-color: #1d4ed8;
-    --nav-hover-bg: #dbeafe;
-    --nav-hover-color: #3b82f6;
-    --nav-active-bg: #1d4ed8;
+    --nav-color: #6d28d9;
+    --nav-hover-bg: #ede9fe;
+    --nav-hover-color: #7c3aed;
+    --nav-active-bg: #6d28d9;
     --nav-active-color: #ffffff;
     
     /* Stepper Wizard */
-    --stepper-bg: #dbeafe;
+    --stepper-bg: #ede9fe;
     --step-item-bg: #ffffff;
     --step-item-text: #222222;
-    --step-item-active-bg: #3b82f6;
+    --step-item-active-bg: #8b5cf6;
     --step-item-active-text: #ffffff;
     --step-item-completed-bg: #2e7d32;
     --step-item-completed-text: #ffffff;
     
     /* Tables */
-    --table-th-bg: #dbeafe;
-    --table-th-text: #1d4ed8;
-    --table-tr-even-bg: #fafcfe;
-    --table-tr-hover-bg: #eef2f7;
+    --table-th-bg: #ede9fe;
+    --table-th-text: #6d28d9;
+    --table-tr-even-bg: #fbfaff;
+    --table-tr-hover-bg: #f5f3ff;
     
     /* Buttons */
-    --btn-bg: #fafcfe;
-    --btn-text: #1d4ed8;
-    --btn-primary-bg: #3b82f6;
+    --btn-bg: #faf9fe;
+    --btn-text: #6d28d9;
+    --btn-primary-bg: #8b5cf6;
     --btn-primary-text: #ffffff;
-    --btn-primary-hover: #1d4ed8;
-    --btn-secondary-bg: #dbeafe;
-    --btn-secondary-text: #1d4ed8;
-    --btn-secondary-hover-bg: #3b82f6;
+    --btn-primary-hover: #6d28d9;
+    --btn-secondary-bg: #ede9fe;
+    --btn-secondary-text: #6d28d9;
+    --btn-secondary-hover-bg: #8b5cf6;
     --btn-secondary-hover-text: #ffffff;
     --submit-btn-bg: #2e7d32;
     --submit-btn-hover: #1b5e20;
     
     /* Alerts and Progress bars */
-    --notice-border-style: 1px dashed #3b82f6;
-    --progress-container-bg: #dbeafe;
+    --notice-border-style: 1px dashed #8b5cf6;
+    --progress-container-bg: #ede9fe;
     --progress-fill-bg: #2e7d32;
     
-    --status-completed-bg: #dbeafe;
+    --status-completed-bg: #ede9fe;
     --status-completed-text: #2e7d32;
-    --status-progress-bg: #dbeafe;
+    --status-progress-bg: #ede9fe;
     --status-progress-text: #c49000;
-    --status-notstarted-bg: #eef2f7;
+    --status-notstarted-bg: #f5f3ff;
     --status-notstarted-text: #757575;
     
-    --badge-local-bg: #3b82f6;
+    --badge-local-bg: #8b5cf6;
     --badge-external-bg: #c49000;
     --badge-local-text: #ffffff;
     --badge-external-text: #ffffff;
     
     /* References list items */
-    --ref-sidebar-hover-bg: #eef2f7;
-    --ref-sidebar-hover-text: #3b82f6;
-    --ref-sidebar-active-bg: #dbeafe;
-    --ref-sidebar-active-text: #1d4ed8;
-    --ref-link-icon-bg: #eef2f7;
+    --ref-sidebar-hover-bg: #f5f3ff;
+    --ref-sidebar-hover-text: #8b5cf6;
+    --ref-sidebar-active-bg: #ede9fe;
+    --ref-sidebar-active-text: #6d28d9;
+    --ref-link-icon-bg: #f5f3ff;
     
-    --platform-rank-bg: #dbeafe;
-    --platform-rank-text: #1d4ed8;
+    --platform-rank-bg: #ede9fe;
+    --platform-rank-text: #6d28d9;
     
-    --syllabus-link-bg: #dbeafe;
-    --syllabus-link-text: #1d4ed8;
-    --syllabus-link-hover-bg: #3b82f6;
+    --syllabus-link-bg: #ede9fe;
+    --syllabus-link-text: #6d28d9;
+    --syllabus-link-hover-bg: #8b5cf6;
     --syllabus-link-hover-text: #ffffff;
     
     /* Modals */
-    --modal-header-bg: #fafcfe;
-    --modal-tabs-bg: #fafcfe;
-    --modal-close-hover: #3b82f6;
-
+    --modal-header-bg: #faf9fe;
+    --modal-tabs-bg: #faf9fe;
+    --modal-close-hover: #8b5cf6;
+ 
     /* Inputs & Search Buttons */
     --input-bg: #ffffff;
     --input-text: #222222;
-    --input-focus-border: #3b82f6;
-    --search-btn-bg: #dbeafe;
-    --search-btn-text: #1d4ed8;
-    --search-btn-hover: #3b82f6;
+    --input-focus-border: #8b5cf6;
+    --search-btn-bg: #ede9fe;
+    --search-btn-text: #6d28d9;
+    --search-btn-hover: #8b5cf6;
 }
 
 body.theme-light {
