@@ -331,21 +331,54 @@
                 return false;
             }
 
-            // Generate simulated 6-digit OTP
-            const simulatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-            const userEnteredOTP = prompt("📧 Verification Code Sent!\n\nWe simulated sending a 6-digit verification code to:\n" + emailVal + "\n\nFor this sandbox demonstration, your simulated OTP is:\n👉 " + simulatedOTP + " 👈\n\nPlease enter the code below to verify your identity and create your account:");
+            let otpCode = "";
+            let isSimulated = true;
+            const isBackendAvailable = window.location.protocol.startsWith('http');
+
+            if (isBackendAvailable) {
+                try {
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const otpResp = await fetch(`${apiBase}/api/send-otp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailVal })
+                    });
+                    const otpData = await otpResp.json();
+                    if (!otpData.success) {
+                        alert("Verification Failed: " + (otpData.message || "Failed to send verification code."));
+                        return false;
+                    }
+                    isSimulated = otpData.simulated;
+                    if (isSimulated) {
+                        otpCode = otpData.otp;
+                    }
+                } catch (err) {
+                    console.warn("Backend OTP request failed, falling back to local simulation:", err);
+                }
+            }
+
+            if (!otpCode && isSimulated) {
+                otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+            }
+
+            let userEnteredOTP = null;
+            if (isSimulated) {
+                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nWe simulated sending a 6-digit verification code to:\n" + emailVal + "\n\nFor this sandbox demonstration, your simulated OTP is:\n👉 " + otpCode + " 👈\n\nPlease enter the code below to verify your identity and create your account:");
+            } else {
+                userEnteredOTP = prompt("📧 Verification Code Sent!\n\nA 6-digit verification code has been sent to your email address:\n" + emailVal + "\n\nPlease enter the code below to verify your identity and create your account:");
+            }
 
             if (userEnteredOTP === null) {
-                // User cancelled prompt
                 return false;
             }
 
-            if (userEnteredOTP.trim() !== simulatedOTP) {
-                alert("Verification Failed: Invalid verification code. Account creation aborted.");
-                return false;
+            if (!isBackendAvailable || isSimulated) {
+                if (userEnteredOTP.trim() !== otpCode) {
+                    alert("Verification Failed: Invalid verification code. Account creation aborted.");
+                    return false;
+                }
             }
 
-            const isBackendAvailable = window.location.protocol.startsWith('http');
             if (isBackendAvailable) {
                 try {
                     const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
@@ -357,7 +390,8 @@
                             email: emailVal,
                             password: pwdVal,
                             grade: gradeVal,
-                            dept: deptVal
+                            dept: deptVal,
+                            otp: userEnteredOTP.trim()
                         })
                     });
                     const resData = await response.json();

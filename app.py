@@ -2,9 +2,68 @@ import os
 import sqlite3
 import hashlib
 import re
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, send_from_directory
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+
+pending_otps = {}
+
+def send_otp_email(to_email, otp):
+    smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+    smtp_port = os.environ.get('SMTP_PORT', '587')
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_pwd = os.environ.get('SMTP_PASSWORD')
+    
+    if not smtp_user or not smtp_pwd:
+        return False
+        
+    try:
+        smtp_port = int(smtp_port)
+    except ValueError:
+        smtp_port = 587
+        
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = to_email
+        msg['Subject'] = "Student Hub - Enrollment Verification Code"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+                <h2 style="color: #2b6cb0; text-align: center;">Enrollment Verification Code</h2>
+                <p>Hello,</p>
+                <p>Thank you for registering on <strong>Student Hub</strong>. Please use the following 6-digit verification code to complete your registration:</p>
+                <div style="font-size: 32px; font-weight: bold; text-align: center; margin: 30px 0; color: #2b6cb0; letter-spacing: 5px;">
+                    {otp}
+                </div>
+                <p style="font-size: 14px; color: #718096;">This code is valid. If you did not request this, please ignore this email.</p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                <p style="font-size: 12px; color: #a0aec0; text-align: center;">&copy; 2026 Student Hub. All Rights Reserved.</p>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
+        else:
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+            server.starttls()
+            
+        server.login(smtp_user, smtp_pwd)
+        server.sendmail(smtp_user, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -76,6 +135,46 @@ def serve_index():
 
 # API Endpoints
 
+@app.route('/api/send-otp', methods=['POST', 'OPTIONS'])
+def api_send_otp():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'success': False, 'message': 'Email is required'}), 400
+        
+    if not EMAIL_REGEX.match(email):
+        return jsonify({'success': False, 'message': 'Invalid email address format'}), 400
+
+    # Check if user already exists
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT email FROM users WHERE LOWER(email) = ?', (email,))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        return jsonify({'success': False, 'message': 'An account with this email already exists'}), 400
+
+    otp = f"{random.randint(100000, 999999)}"
+    pending_otps[email] = otp
+    
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_pwd = os.environ.get('SMTP_PASSWORD')
+    
+    if smtp_user and smtp_pwd:
+        sent = send_otp_email(email, otp)
+        if sent:
+            return jsonify({'success': True, 'simulated': False})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to send verification email. Please verify SMTP configuration or try again.'}), 500
+    else:
+        # SMTP not configured - simulated mode
+        return jsonify({'success': True, 'simulated': True, 'otp': otp})
+
 @app.route('/api/register', methods=['POST', 'OPTIONS'])
 def api_register():
     if request.method == 'OPTIONS':
@@ -89,12 +188,20 @@ def api_register():
     password = data.get('password', '').strip()
     grade = data.get('grade', '').strip()
     dept = data.get('dept', '').strip()
+    otp_provided = data.get('otp', '').strip()
     
-    if not all([username, email, password, grade, dept]):
-        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    if not all([username, email, password, grade, dept, otp_provided]):
+        return jsonify({'success': False, 'message': 'All fields and verification code are required'}), 400
         
     if not EMAIL_REGEX.match(email):
         return jsonify({'success': False, 'message': 'Invalid email address format'}), 400
+        
+    # Verify OTP
+    if email not in pending_otps or pending_otps[email] != otp_provided:
+        return jsonify({'success': False, 'message': 'Invalid or expired verification code'}), 400
+        
+    # Clear the OTP
+    pending_otps.pop(email, None)
         
     hashed = hash_password(password)
     
