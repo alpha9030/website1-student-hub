@@ -284,11 +284,15 @@
             }
             return null; // Valid
         }
+        function validateEmail(email) {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return emailRegex.test(email.trim());
+        }
 
         async function handleSignup(event) {
             if (event) event.preventDefault();
             const usernameVal = document.getElementById('username').value || 'Scholar';
-            const emailVal = document.getElementById('email').value || '';
+            const emailVal = (document.getElementById('email').value || '').trim();
             const gradeVal = document.getElementById('grade-level').value || 'freshman';
             const deptVal = document.getElementById('dept').value || 'cse';
             const pwdVal = document.getElementById('password').value || '';
@@ -301,6 +305,11 @@
             
             if (!gradeVal || !deptVal || !emailVal) {
                 alert("Please complete all registration fields.");
+                return false;
+            }
+
+            if (!validateEmail(emailVal)) {
+                alert("Invalid Email: Please enter a valid email address (e.g., student@university.edu).");
                 return false;
             }
 

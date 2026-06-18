@@ -1,7 +1,10 @@
 import os
 import sqlite3
 import hashlib
+import re
 from flask import Flask, request, jsonify, send_from_directory
+
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -89,6 +92,9 @@ def api_register():
     
     if not all([username, email, password, grade, dept]):
         return jsonify({'success': False, 'message': 'All fields are required'}), 400
+        
+    if not EMAIL_REGEX.match(email):
+        return jsonify({'success': False, 'message': 'Invalid email address format'}), 400
         
     hashed = hash_password(password)
     
