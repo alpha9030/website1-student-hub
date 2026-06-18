@@ -4603,7 +4603,7 @@
                     cb.checked = true;
                 }
                 
-                cb.addEventListener('change', function() {
+                cb.addEventListener('change', function(e) {
                     localStorage.setItem(storageKey, cb.checked ? 'true' : 'false');
                     // Sync to backend if function exists
                     if (window.syncProgressToBackend) {
@@ -4612,6 +4612,9 @@
                     // Trigger homepage progress sync
                     if (window.updateHomepageProgress) {
                         window.updateHomepageProgress();
+                    }
+                    if (cb.checked && window.triggerConfetti) {
+                        window.triggerConfetti(e.clientX, e.clientY, false);
                     }
                 });
             });

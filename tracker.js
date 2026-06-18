@@ -375,8 +375,222 @@ function syncProgressToBackend(checkpointId, checked) {
     }
 }
 
+// Pure canvas-based custom Confetti Particle Emitter
+function triggerConfetti(x, y, isBigBurst = false) {
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '99999';
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = [
+        '#14b8a6', '#0d9488', '#0f766e', // Teal family
+        '#87a987', '#5f8a5f', '#466646', // Sage family
+        '#2dd4bf', '#a7f3d0', '#f59e0b', // Accent colors
+        '#10b981', '#34d399'
+    ];
+
+    const particleCount = isBigBurst ? 120 : 30;
+    const originX = x !== undefined ? x : width / 2;
+    const originY = y !== undefined ? y : height / 2;
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: originX,
+            y: originY,
+            vx: (Math.random() - 0.5) * (isBigBurst ? 14 : 5),
+            vy: (Math.random() - 0.5) * (isBigBurst ? 14 : 5) - (isBigBurst ? 6 : 2),
+            size: Math.random() * 8 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 8,
+            opacity: 1,
+            gravity: isBigBurst ? 0.22 : 0.16
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        let active = false;
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            if (p.opacity <= 0) continue;
+
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += p.gravity;
+            p.vx *= 0.98;
+            p.rotation += p.rotationSpeed;
+            p.opacity -= 0.012;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+        }
+
+        if (active) {
+            requestAnimationFrame(animate);
+        } else {
+            canvas.remove();
+        }
+    }
+
+    animate();
+}
+window.triggerConfetti = triggerConfetti;
+
+// Computer Science Trivia Questions Database
+const TRIVIA_QUESTIONS = [
+    {
+        question: "What was the name of the first programmable mechanical computer designed by Charles Babbage?",
+        options: ["ENIAC", "Analytical Engine", "Difference Engine", "Z3"],
+        correct: 1,
+        explanation: "Charles Babbage designed the Analytical Engine in 1837, which contained an ALU, basic flow control, and integrated memory, making it the first general-purpose computer design."
+    },
+    {
+        question: "Which programming language was named after a British comedy troupe?",
+        options: ["Java", "Python", "Ada", "Ruby"],
+        correct: 1,
+        explanation: "Guido van Rossum named Python after the BBC show 'Monty Python's Flying Circus' because he wanted a name that was short, unique, and slightly mysterious."
+    },
+    {
+        question: "In computer science, what does the acronym 'REST' stand for in web services?",
+        options: ["Representational State Transfer", "Request State Transmission", "Responsive Service Technology", "Routing Extensible Server Toolkit"],
+        correct: 0,
+        explanation: "REST stands for Representational State Transfer. It was introduced by Roy Fielding in 2000 as an architectural style for distributed hypermedia systems."
+    },
+    {
+        question: "What is the time complexity of searching a sorted array using Binary Search?",
+        options: ["O(n)", "O(n log n)", "O(log n)", "O(1)"],
+        correct: 2,
+        explanation: "Binary Search halves the searchable section of the array in each step, yielding a logarithmic time complexity of O(log n)."
+    },
+    {
+        question: "Which of the following is NOT a fundamental concept of Object-Oriented Programming (OOP)?",
+        options: ["Encapsulation", "Polymorphism", "Recursion", "Inheritance"],
+        correct: 2,
+        explanation: "While recursion is a common programming concept, the four pillars of OOP are Encapsulation, Abstraction, Inheritance, and Polymorphism."
+    },
+    {
+        question: "What is the primary function of the ARP protocol in networks?",
+        options: ["Translate domain names to IP addresses", "Map an IP address to a physical MAC address", "Encrypt HTTP requests", "Route packets across autonomous systems"],
+        correct: 1,
+        explanation: "Address Resolution Protocol (ARP) maps a dynamic Internet Protocol (IP) address to a permanent physical machine address (MAC address) on a local network."
+    }
+];
+
+function getDailyQuestionIndex() {
+    const today = new Date();
+    const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    return dateSeed % TRIVIA_QUESTIONS.length;
+}
+
+function initTriviaWidget() {
+    const container = document.getElementById("trivia-widget-container");
+    if (!container) return;
+
+    const todayStr = new Date().toDateString();
+    const lastPlayedDate = localStorage.getItem("dailyTrivia_lastPlayedDate");
+    const dailyIdx = getDailyQuestionIndex();
+    const currentQuestion = TRIVIA_QUESTIONS[dailyIdx];
+
+    let triviaScore = parseInt(localStorage.getItem("triviaScore") || "0");
+
+    let cardHTML = `
+        <div class="trivia-card">
+            <div class="trivia-header">
+                <span class="trivia-label">🧠 Daily CS Trivia Challenge</span>
+                <span class="trivia-score">Score: <strong>${triviaScore} pts</strong></span>
+            </div>
+            <div class="trivia-question">${currentQuestion.question}</div>
+            <div class="trivia-options">
+    `;
+
+    const alreadyPlayed = lastPlayedDate === todayStr;
+    const savedSelected = localStorage.getItem("dailyTrivia_selectedAnswer");
+
+    currentQuestion.options.forEach((opt, idx) => {
+        let optionClass = "";
+        let disabledAttr = "";
+
+        if (alreadyPlayed) {
+            disabledAttr = "disabled";
+            const selectedIdx = parseInt(savedSelected);
+            if (idx === currentQuestion.correct) {
+                optionClass = "correct";
+            } else if (idx === selectedIdx) {
+                optionClass = "incorrect";
+            }
+        }
+
+        cardHTML += `
+            <button class="trivia-option ${optionClass}" ${disabledAttr} onclick="submitTriviaAnswer(${idx})">
+                ${opt}
+            </button>
+        `;
+    });
+
+    cardHTML += `
+            </div>
+            <div id="trivia-feedback" class="trivia-feedback" style="${alreadyPlayed ? 'display:block' : 'display:none'}">
+    `;
+
+    if (alreadyPlayed) {
+        const wasCorrect = localStorage.getItem("dailyTrivia_isCorrect") === "true";
+        cardHTML += `
+            <p class="feedback-status ${wasCorrect ? 'text-correct' : 'text-incorrect'}">
+                ${wasCorrect ? "🎉 Correct! Well done (+10 pts)" : "❌ Incorrect. Try again tomorrow!"}
+            </p>
+            <p class="feedback-explanation">${currentQuestion.explanation}</p>
+        `;
+    }
+
+    cardHTML += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = cardHTML;
+}
+
+window.submitTriviaAnswer = function(optionIndex) {
+    const todayStr = new Date().toDateString();
+    const dailyIdx = getDailyQuestionIndex();
+    const question = TRIVIA_QUESTIONS[dailyIdx];
+    const isCorrect = optionIndex === question.correct;
+
+    localStorage.setItem("dailyTrivia_lastPlayedDate", todayStr);
+    localStorage.setItem("dailyTrivia_selectedAnswer", optionIndex.toString());
+    localStorage.setItem("dailyTrivia_isCorrect", isCorrect ? "true" : "false");
+
+    if (isCorrect) {
+        let currentScore = parseInt(localStorage.getItem("triviaScore") || "0");
+        localStorage.setItem("triviaScore", (currentScore + 10).toString());
+        triggerConfetti(window.innerWidth / 2, window.innerHeight / 2, true);
+    }
+
+    initTriviaWidget();
+};
+
 // tracker.js - Simple local storage progress tracker for students
 document.addEventListener("DOMContentLoaded", function() {
+    let isInitialLoad = true;
+
     // 1. Find all progress checkboxes
     const checkboxes = document.querySelectorAll(".progress-check");
     
@@ -393,18 +607,26 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // 3. Update the progress metrics on the current page
     updatePageProgress();
+    
+    isInitialLoad = false;
 
     // 4. Listen for changes on checkboxes
     checkboxes.forEach(function(checkbox) {
-        checkbox.addEventListener("change", function() {
+        checkbox.addEventListener("change", function(e) {
             const id = checkbox.getAttribute("id");
             if (id) {
                 localStorage.setItem(id, checkbox.checked ? "true" : "false");
                 syncProgressToBackend(id, checkbox.checked);
             }
+            if (checkbox.checked) {
+                triggerConfetti(e.clientX, e.clientY, false);
+            }
             updatePageProgress();
         });
     });
+
+    // 5. Initialize Daily Trivia Widget
+    initTriviaWidget();
 
     // Function to calculate and update progress stats
     function updatePageProgress() {
@@ -424,6 +646,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const percent = Math.round((completed / total) * 100) || 0;
         
+        // Celebrate completion if it reached 100% and it's not the initial load!
+        if (percent === 100 && !isInitialLoad) {
+            triggerConfetti(window.innerWidth / 2, window.innerHeight / 2, true);
+        }
+
         // Find or create progress text element
         let progressContainer = document.getElementById("page-progress-container");
         if (progressContainer) {
@@ -458,6 +685,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let totalSyllabusTasks = 0;
         let totalSyllabusCompleted = 0;
+        let hasAnySubjectCompleted = false;
 
         subjects.forEach(function(subject) {
             let subjectCompleted = 0;
@@ -467,6 +695,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (localStorage.getItem(taskId) === "true") {
                     subjectCompleted++;
                 }
+            }
+            if (subjectCompleted === subject.totalTasks) {
+                hasAnySubjectCompleted = true;
             }
 
             totalSyllabusTasks += subject.totalTasks;
@@ -505,6 +736,41 @@ document.addEventListener("DOMContentLoaded", function() {
             dashProgressBar.innerText = `${overallPercent}%`;
         }
 
+        // Achievements computation and markup generator
+        const achievements = [
+            { id: 'first-step', title: '🌱 First Steps', desc: 'Checked your first learning objective', unlocked: totalSyllabusCompleted >= 1 },
+            { id: 'novice', title: '💻 Code Novice', desc: 'Complete 5 learning objectives', unlocked: totalSyllabusCompleted >= 5 },
+            { id: 'scholar', title: '📚 Dedicated Scholar', desc: 'Complete 15 learning objectives', unlocked: totalSyllabusCompleted >= 15 },
+            { id: 'explorer', title: '🧭 Guide Explorer', desc: 'Fully complete any single subject guide', unlocked: hasAnySubjectCompleted },
+            { id: 'master', title: '🎓 Code Master', desc: 'Complete 35 learning objectives', unlocked: totalSyllabusCompleted >= 35 },
+            { id: 'champion', title: '🏆 Student Hub Champion', desc: 'Complete 100% of the entire syllabus', unlocked: overallPercent === 100 }
+        ];
+
+        let achievementsHTML = `
+            <div class="achievements-section">
+                <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    ✨ Unlockable Achievements (${achievements.filter(a => a.unlocked).length}/${achievements.length})
+                </h4>
+                <div class="achievements-grid">
+        `;
+
+        achievements.forEach(ach => {
+            achievementsHTML += `
+                <div class="achievement-badge ${ach.unlocked ? 'unlocked' : 'locked'}" title="${ach.desc}">
+                    <div class="badge-icon">${ach.unlocked ? ach.title.split(' ')[0] : '🔒'}</div>
+                    <div class="badge-info">
+                        <div class="badge-title">${ach.unlocked ? ach.title.split(' ').slice(1).join(' ') : 'Locked Milestone'}</div>
+                        <div class="badge-desc">${ach.desc}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        achievementsHTML += `
+                </div>
+            </div>
+        `;
+
         const overallContainer = document.getElementById("overall-progress-container");
         if (overallContainer) {
             overallContainer.innerHTML = `
@@ -516,6 +782,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             ${overallPercent}%
                         </div>
                     </div>
+                    ${achievementsHTML}
                 </div>
             `;
         }
