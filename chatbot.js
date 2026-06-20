@@ -418,7 +418,7 @@
             const email = safeStorage.getItem('studentEmail');
             const isBackendAvailable = window.location.protocol.startsWith('http');
             if (isBackendAvailable && email) {
-                const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                 fetch(`${apiBase}/api/chatbot`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

@@ -238,7 +238,7 @@
             const isBackendAvailable = window.location.protocol.startsWith('http');
             if (isBackendAvailable) {
                 try {
-                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                     const response = await fetch(`${apiBase}/api/admin/users`, {
                         headers: { 'X-Admin-Key': key }
                     });

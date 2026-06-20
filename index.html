@@ -654,7 +654,7 @@
             const isBackendAvailable = window.location.protocol.startsWith('http');
             if (isBackendAvailable) {
                 try {
-                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                     const response = await fetch(`${apiBase}/api/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -836,7 +836,7 @@
 
             if (isBackendAvailable) {
                 try {
-                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                     const response = await fetch(`${apiBase}/api/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1094,7 +1094,7 @@
                 const isBackendAvailable = window.location.protocol.startsWith('http');
                 if (isBackendAvailable && currentEmail) {
                     try {
-                        const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                        const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                         await fetch(`${apiBase}/api/delete-account`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1559,7 +1559,7 @@
                 // Sync with backend database (SQLite / Supabase)
                 const isBackendAvailable = window.location.protocol.startsWith('http');
                 if (isBackendAvailable) {
-                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                     fetch(`${apiBase}/api/update-profile`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1762,7 +1762,7 @@
             const isBackendAvailable = window.location.protocol.startsWith('http');
             if (isBackendAvailable) {
                 try {
-                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://studenhub.pr';
+                    const apiBase = window.location.protocol.startsWith('http') ? '' : 'https://127.0.0.1';
                     const response = await fetch(`${apiBase}/api/google-login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
