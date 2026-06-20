@@ -37,14 +37,22 @@ Once your project is ready:
 3. Copy the following SQL statements, paste them into the editor, and click **Run**:
 
 ```sql
--- 1. Create USERS table
+-- 1. Create USERS table (with login tracking columns)
 CREATE TABLE users (
     email TEXT PRIMARY KEY,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     grade TEXT NOT NULL,
-    dept TEXT NOT NULL
+    dept TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    login_count INT DEFAULT 0
 );
+
+-- Note: To alter an existing users table to add tracking columns:
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW());
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INT DEFAULT 0;
 
 -- 2. Create PROGRESS table
 CREATE TABLE progress (

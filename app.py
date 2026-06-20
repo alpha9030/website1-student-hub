@@ -6,6 +6,7 @@ import random
 import smtplib
 import requests
 import json
+import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, send_from_directory
@@ -145,9 +146,23 @@ def init_db():
             username TEXT NOT NULL,
             password TEXT NOT NULL,
             grade TEXT NOT NULL,
-            dept TEXT NOT NULL
+            dept TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_login_at DATETIME,
+            login_count INTEGER DEFAULT 0
         )
     ''')
+    
+    # Safely alter table to add columns in case the table already existed in database file
+    for col_def in [
+        ("created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+        ("last_login_at", "DATETIME"),
+        ("login_count", "INTEGER DEFAULT 0")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE users ADD COLUMN {col_def[0]} {col_def[1]}")
+        except sqlite3.OperationalError:
+            pass
     # Create syllabus progress table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS progress (
@@ -205,7 +220,10 @@ def get_user_by_email(email):
                         'username': user.get('username'),
                         'password': user.get('password'),
                         'grade': user.get('grade'),
-                        'dept': user.get('dept')
+                        'dept': user.get('dept'),
+                        'created_at': user.get('created_at'),
+                        'last_login_at': user.get('last_login_at'),
+                        'login_count': user.get('login_count', 0)
                     }
         except Exception as e:
             print(f"Supabase get_user_by_email error: {e}")
@@ -230,7 +248,7 @@ def get_user_by_email(email):
     else:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT username, email, password, grade, dept FROM users WHERE LOWER(email) = ?', (email,))
+        cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count FROM users WHERE LOWER(email) = ?', (email,))
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -239,7 +257,10 @@ def get_user_by_email(email):
                 'username': row['username'],
                 'password': row['password'],
                 'grade': row['grade'],
-                'dept': row['dept']
+                'dept': row['dept'],
+                'created_at': row['created_at'],
+                'last_login_at': row['last_login_at'],
+                'login_count': row['login_count']
             }
         return None
 
@@ -264,7 +285,10 @@ def get_user_by_email_or_username(identifier):
                         'username': user.get('username'),
                         'password': user.get('password'),
                         'grade': user.get('grade'),
-                        'dept': user.get('dept')
+                        'dept': user.get('dept'),
+                        'created_at': user.get('created_at'),
+                        'last_login_at': user.get('last_login_at'),
+                        'login_count': user.get('login_count', 0)
                     }
         except Exception as e:
             print(f"Supabase get_user_by_email_or_username error: {e}")
@@ -290,7 +314,7 @@ def get_user_by_email_or_username(identifier):
     else:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT username, email, password, grade, dept FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', (identifier, identifier))
+        cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', (identifier, identifier))
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -299,7 +323,10 @@ def get_user_by_email_or_username(identifier):
                 'username': row['username'],
                 'password': row['password'],
                 'grade': row['grade'],
-                'dept': row['dept']
+                'dept': row['dept'],
+                'created_at': row['created_at'],
+                'last_login_at': row['last_login_at'],
+                'login_count': row['login_count']
             }
         return None
 
@@ -667,7 +694,9 @@ def get_all_users_for_admin():
                     'grade': u.get('grade'),
                     'dept': u.get('dept'),
                     'progress_count': len(progress),
-                    'status': 'active'
+                    'status': 'active',
+                    'last_login_at': u.get('last_login_at'),
+                    'login_count': u.get('login_count', 0)
                 })
                 
             for d in deleted_users:
@@ -726,7 +755,7 @@ def get_all_users_for_admin():
     else:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT username, email, grade, dept FROM users')
+        cursor.execute('SELECT username, email, grade, dept, last_login_at, login_count FROM users')
         users = cursor.fetchall()
         
         cursor.execute('SELECT username, email, grade, dept FROM deleted_users')
@@ -742,7 +771,9 @@ def get_all_users_for_admin():
                 'grade': u['grade'],
                 'dept': u['dept'],
                 'progress_count': prog_count,
-                'status': 'active'
+                'status': 'active',
+                'last_login_at': u['last_login_at'],
+                'login_count': u['login_count'] if u['login_count'] is not None else 0
             })
             
         for d in deleted_users:
@@ -790,6 +821,50 @@ def update_user_profile(email, dept, grade):
         except sqlite3.Error as e:
             print(f"SQLite update_user_profile error: {e}")
             return False
+        finally:
+            conn.close()
+
+def track_user_login(email):
+    email = email.strip().lower()
+    current_time = datetime.datetime.utcnow().isoformat()
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            # 1. Fetch current login count
+            user = get_user_by_email(email)
+            current_count = user.get('login_count', 0) if user else 0
+            if current_count is None:
+                current_count = 0
+            
+            # 2. Update last_login_at and increment login_count
+            url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            params = {"email": f"eq.{email}"}
+            payload = {
+                "last_login_at": current_time,
+                "login_count": current_count + 1
+            }
+            requests.patch(url, headers=headers, params=params, json=payload, timeout=10)
+        except Exception as e:
+            print(f"Supabase track_user_login error: {e}")
+    else:
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT login_count FROM users WHERE LOWER(email) = ?", (email,))
+            row = cursor.fetchone()
+            current_count = row[0] if row and row[0] is not None else 0
+            
+            cursor.execute(
+                'UPDATE users SET last_login_at = ?, login_count = ? WHERE LOWER(email) = ?',
+                (current_time, current_count + 1, email)
+            )
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"SQLite track_user_login error: {e}")
         finally:
             conn.close()
 
@@ -888,6 +963,7 @@ def api_google_login():
     
     if user:
         # User exists, log them in!
+        track_user_login(email)
         return jsonify({
             'success': True,
             'message': 'Logged in successfully via Google',
@@ -909,6 +985,7 @@ def api_google_login():
         placeholder_pwd = hash_password(os.urandom(24).hex())
         success = register_user(email, username, placeholder_pwd, grade, dept)
         if success:
+            track_user_login(email)
             return jsonify({
                 'success': True,
                 'message': 'Account created successfully via Google',
@@ -940,6 +1017,7 @@ def api_login():
     user = get_user_by_email_or_username(email)
     
     if user and user['password'] == hashed:
+        track_user_login(user['email'])
         return jsonify({
             'success': True,
             'user': {

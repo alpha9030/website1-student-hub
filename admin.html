@@ -140,12 +140,14 @@
                         <th style="text-align: left;">Email Address</th>
                         <th style="text-align: left;">Specialization (Dept)</th>
                         <th style="text-align: left;">Year Standing</th>
+                        <th style="text-align: left;">Last Login</th>
+                        <th style="text-align: center;">Logins</th>
                         <th style="text-align: center;">Objectives Met</th>
                     </tr>
                 </thead>
                 <tbody id="users-table-body">
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted);">No student logs found in database.</td>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted);">No student logs found in database.</td>
                     </tr>
                 </tbody>
             </table>
@@ -270,7 +272,9 @@
                         dept: u.dept || 'cse',
                         grade: u.grade || 'freshman',
                         progress_count: u.progress ? u.progress.length : 0,
-                        status: 'active'
+                        status: 'active',
+                        last_login_at: u.last_login_at || null,
+                        login_count: u.login_count || 0
                     });
                 });
                 
@@ -281,7 +285,9 @@
                         dept: d.dept || 'cse',
                         grade: d.grade || 'freshman',
                         progress_count: 0,
-                        status: 'deleted'
+                        status: 'deleted',
+                        last_login_at: d.last_login_at || null,
+                        login_count: d.login_count || 0
                     });
                 });
                 
@@ -296,7 +302,7 @@
             tbody.innerHTML = '';
 
             if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No student logs found in database.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No student logs found in database.</td></tr>`;
                 document.getElementById('stat-total-students').innerText = 0;
                 document.getElementById('stat-active-progress').innerText = 0;
                 return;
@@ -320,11 +326,24 @@
                     ? `<span class="badge" style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600;">Account Deleted</span>`
                     : `<span class="badge" style="background: var(--primary-color); color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600;">${u.progress_count}</span>`;
 
+                let lastLoginText = "Never";
+                if (u.last_login_at) {
+                    try {
+                        const date = new Date(u.last_login_at);
+                        lastLoginText = date.toLocaleString();
+                    } catch(e) {
+                        lastLoginText = u.last_login_at;
+                    }
+                }
+                const logins = u.login_count || 0;
+
                 tr.innerHTML = `
                     <td><strong>${escapeHTML(u.username)}</strong> ${isDeleted ? '<small style="color: #ef4444; font-weight: bold; margin-left: 5px;">(Deleted)</small>' : ''}</td>
                     <td>${escapeHTML(u.email)}</td>
                     <td>${escapeHTML(u.dept.toUpperCase())}</td>
                     <td>${escapeHTML(u.grade.charAt(0).toUpperCase() + u.grade.slice(1))}</td>
+                    <td>${escapeHTML(lastLoginText)}</td>
+                    <td style="text-align: center;">${logins}</td>
                     <td style="text-align: center;">${badgeHTML}</td>
                 `;
                 tbody.appendChild(tr);
