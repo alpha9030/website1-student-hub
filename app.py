@@ -139,7 +139,8 @@ def init_db():
             dept TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             last_login_at DATETIME,
-            login_count INTEGER DEFAULT 0
+            login_count INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'active'
         )
     ''')
     
@@ -147,7 +148,8 @@ def init_db():
     for col_def in [
         ("created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
         ("last_login_at", "DATETIME"),
-        ("login_count", "INTEGER DEFAULT 0")
+        ("login_count", "INTEGER DEFAULT 0"),
+        ("status", "TEXT DEFAULT 'active'")
     ]:
         try:
             cursor.execute(f"ALTER TABLE users ADD COLUMN {col_def[0]} {col_def[1]}")
@@ -207,7 +209,7 @@ def get_user_by_email(email):
     email = email.strip().lower()
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count FROM users WHERE LOWER(email) = ?', (email,))
+    cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count, status FROM users WHERE LOWER(email) = ?', (email,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -219,7 +221,8 @@ def get_user_by_email(email):
             'dept': row['dept'],
             'created_at': row['created_at'],
             'last_login_at': row['last_login_at'],
-            'login_count': row['login_count']
+            'login_count': row['login_count'],
+            'status': row['status'] if row['status'] is not None else 'active'
         }
     return None
 
@@ -227,7 +230,7 @@ def get_user_by_email_or_username(identifier):
     identifier = identifier.strip().lower()
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', (identifier, identifier))
+    cursor.execute('SELECT username, email, password, grade, dept, created_at, last_login_at, login_count, status FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', (identifier, identifier))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -239,7 +242,8 @@ def get_user_by_email_or_username(identifier):
             'dept': row['dept'],
             'created_at': row['created_at'],
             'last_login_at': row['last_login_at'],
-            'login_count': row['login_count']
+            'login_count': row['login_count'],
+            'status': row['status'] if row['status'] is not None else 'active'
         }
     return None
 
@@ -320,24 +324,33 @@ def save_chatbot_settings(email, aura_mode, aura_api_key, aura_user_name):
     finally:
         conn.close()
 
+def reactivate_user(email, username, password_hash, grade, dept):
+    email = email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            UPDATE users 
+            SET username = ?, password = ?, grade = ?, dept = ?, status = 'active', login_count = 0, last_login_at = NULL
+            WHERE LOWER(email) = ?
+        ''', (username, password_hash, grade, dept, email))
+        # Clear their old progress so they start fresh
+        cursor.execute('DELETE FROM progress WHERE LOWER(email) = ?', (email,))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"SQLite reactivate_user error: {e}")
+        return False
+    finally:
+        conn.close()
+
 def delete_user_account(email):
     email = email.strip().lower()
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT username, grade, dept, last_login_at, login_count FROM users WHERE LOWER(email) = ?', (email,))
-        user = cursor.fetchone()
-        if user:
-            cursor.execute('SELECT COUNT(*) FROM progress WHERE LOWER(email) = ?', (email,))
-            prog_count = cursor.fetchone()[0]
-            
-            cursor.execute(
-                'INSERT OR REPLACE INTO deleted_users (email, username, grade, dept, last_login_at, login_count, progress_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                (email, user['username'], user['grade'], user['dept'], user['last_login_at'], user['login_count'], prog_count)
-            )
-        cursor.execute('DELETE FROM users WHERE LOWER(email) = ?', (email,))
-        cursor.execute('DELETE FROM progress WHERE LOWER(email) = ?', (email,))
-        cursor.execute('DELETE FROM chatbot_settings WHERE LOWER(email) = ?', (email,))
+        # Soft delete: toggle status to 'deleted'
+        cursor.execute("UPDATE users SET status = 'deleted' WHERE LOWER(email) = ?", (email,))
         conn.commit()
         return True
     except sqlite3.Error as e:
@@ -349,15 +362,19 @@ def delete_user_account(email):
 def get_all_users_for_admin():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT username, email, grade, dept, last_login_at, login_count FROM users')
+    cursor.execute('SELECT username, email, grade, dept, last_login_at, login_count, status FROM users')
     users = cursor.fetchall()
     
     cursor.execute('SELECT username, email, grade, dept, last_login_at, login_count, progress_count FROM deleted_users')
-    deleted_users = cursor.fetchall()
+    legacy_deleted = cursor.fetchall()
     
     user_list = []
+    seen_emails = set()
+    
     for u in users:
-        cursor.execute('SELECT COUNT(*) FROM progress WHERE email = ?', (u['email'],))
+        email = u['email'].lower()
+        seen_emails.add(email)
+        cursor.execute('SELECT COUNT(*) FROM progress WHERE LOWER(email) = ?', (email,))
         prog_count = cursor.fetchone()[0]
         user_list.append({
             'username': u['username'],
@@ -365,12 +382,15 @@ def get_all_users_for_admin():
             'grade': u['grade'],
             'dept': u['dept'],
             'progress_count': prog_count,
-            'status': 'active',
+            'status': u['status'] if u['status'] is not None else 'active',
             'last_login_at': u['last_login_at'],
             'login_count': u['login_count'] if u['login_count'] is not None else 0
         })
         
-    for d in deleted_users:
+    for d in legacy_deleted:
+        email = d['email'].lower()
+        if email in seen_emails:
+            continue
         user_list.append({
             'username': d['username'],
             'email': d['email'],
@@ -502,6 +522,18 @@ def api_register():
         
     hashed = hash_password(password)
     
+    # Check if user already exists
+    user = get_user_by_email(email)
+    if user:
+        if user.get('status', 'active') == 'deleted':
+            success = reactivate_user(email, username, hashed, grade, dept)
+            if success:
+                return jsonify({'success': True, 'message': 'Scholar enrolled successfully (account reactivated)'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to reactivate account'}), 500
+        else:
+            return jsonify({'success': False, 'message': 'An account with this email already exists'}), 400
+            
     success = register_user(email, username, hashed, grade, dept)
     if success:
         return jsonify({'success': True, 'message': 'Scholar enrolled successfully'})
@@ -526,6 +558,9 @@ def api_google_login():
     user = get_user_by_email(email)
     
     if user:
+        if user.get('status', 'active') == 'deleted':
+            # Reactivate
+            reactivate_user(email, username, user['password'], user['grade'], user['dept'])
         # User exists, log them in!
         track_user_login(email)
         updated_user = get_user_by_email(email)
@@ -586,7 +621,7 @@ def api_login():
     hashed = hash_password(password)
     user = get_user_by_email_or_username(email)
     
-    if user and user['password'] == hashed:
+    if user and user['password'] == hashed and user.get('status', 'active') == 'active':
         track_user_login(user['email'])
         updated_user = get_user_by_email(user['email'])
         return jsonify({

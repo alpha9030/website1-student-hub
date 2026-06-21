@@ -305,7 +305,8 @@
             const cleanId = idValue.toLowerCase();
             const foundUser = users.find(u => 
                 ((u.email || '').trim().toLowerCase() === cleanId || (u.username || '').trim().toLowerCase() === cleanId) && 
-                (u.password || '').trim() === pwdValue
+                (u.password || '').trim() === pwdValue &&
+                u.status !== 'deleted'
             );
 
             if (!foundUser) {
@@ -441,20 +442,36 @@
             try { users = JSON.parse(localStorage.getItem('registeredUsers') || '[]'); } catch(e) { users = []; }
             if (!Array.isArray(users)) users = [];
             const cleanEmail = emailVal.toLowerCase();
-            if (users.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
-                alert("An account with this email address is already registered.");
-                return false;
+            const existingUser = users.find(u => (u.email || '').toLowerCase() === cleanEmail);
+            if (existingUser) {
+                if (existingUser.status === 'deleted') {
+                    // Reactivate
+                    existingUser.username = usernameVal;
+                    existingUser.password = pwdVal;
+                    existingUser.grade = gradeVal;
+                    existingUser.dept = deptVal;
+                    existingUser.status = 'active';
+                    existingUser.progress = [];
+                    existingUser.login_count = 0;
+                    existingUser.last_login_at = null;
+                } else {
+                    alert("An account with this email address is already registered.");
+                    return false;
+                }
+            } else {
+                const newUser = {
+                    username: usernameVal,
+                    email: cleanEmail,
+                    password: pwdVal,
+                    grade: gradeVal,
+                    dept: deptVal,
+                    progress: [],
+                    status: 'active',
+                    login_count: 0,
+                    last_login_at: null
+                };
+                users.push(newUser);
             }
-
-            const newUser = {
-                username: usernameVal,
-                email: cleanEmail,
-                password: pwdVal,
-                grade: gradeVal,
-                dept: deptVal,
-                progress: []
-            };
-            users.push(newUser);
             localStorage.setItem('registeredUsers', JSON.stringify(users));
             
             localStorage.setItem('studentName', usernameVal);
@@ -533,36 +550,26 @@
                 if (fontSize) localStorage.setItem('siteFontSize', fontSize);
                 if (deletedJson) localStorage.setItem('deletedUsers', deletedJson);
                 
-                // Remove this user from the registered users list and add to deleted list
+                // Mark this user as deleted in the registeredUsers list permanently (soft-delete)
                 if (usersJson && currentEmail) {
                     let users = [];
                     try { users = JSON.parse(usersJson) || []; } catch(e) { users = []; }
                     if (!Array.isArray(users)) users = [];
                     const userToDelete = users.find(u => (u.email || '').toLowerCase() === currentEmail.toLowerCase());
                     if (userToDelete) {
-                        const deletedUsers = JSON.parse(localStorage.getItem('deletedUsers') || '[]');
-                        if (!deletedUsers.some(d => d.email === currentEmail)) {
-                            // Find all progress keys in local storage
-                            let localProgressCount = 0;
-                            for (let i = 0; i < localStorage.length; i++) {
-                                const key = localStorage.key(i);
-                                if (key && key.includes('-task-')) {
-                                    localProgressCount++;
-                                }
+                        userToDelete.status = 'deleted';
+                        // Record their current progress into their user object so it's stored permanently
+                        const currentProgress = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && key.includes('-task-')) {
+                                currentProgress.push(key);
                             }
-                            deletedUsers.push({
-                                username: userToDelete.username,
-                                email: userToDelete.email,
-                                grade: userToDelete.grade,
-                                dept: userToDelete.dept,
-                                last_login_at: userToDelete.last_login_at || new Date().toISOString(),
-                                login_count: userToDelete.login_count || 1,
-                                progress_count: userToDelete.progress ? userToDelete.progress.length : localProgressCount
-                            });
-                            localStorage.setItem('deletedUsers', JSON.stringify(deletedUsers));
                         }
+                        userToDelete.progress = currentProgress;
+                        userToDelete.last_login_at = userToDelete.last_login_at || new Date().toISOString();
+                        userToDelete.login_count = userToDelete.login_count || 1;
                     }
-                    users = users.filter(u => u.email !== currentEmail);
                     localStorage.setItem('registeredUsers', JSON.stringify(users));
                 }
 
