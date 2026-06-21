@@ -392,6 +392,7 @@
                     
                     <label for="profile-dept-select" style="font-weight: bold; margin: 0;">Department:</label>
                     <select id="profile-dept-select" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-body); font-size: 14px;" onchange="saveProfileDropdowns()">
+                        <option value="unspecified" disabled selected>-- Select Department --</option>
                         <option value="cse">Computer Science & Engineering (CSE)</option>
                         <option value="it">Information Technology (IT)</option>
                         <option value="ece">Electronics & Communication Engineering (ECE)</option>
@@ -403,6 +404,7 @@
                     
                     <label for="profile-grade-select" style="font-weight: bold; margin: 0;">Academic Year:</label>
                     <select id="profile-grade-select" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-body); font-size: 14px;" onchange="saveProfileDropdowns()">
+                        <option value="unspecified" disabled selected>-- Select Year Standing --</option>
                         <option value="freshman">1st Year (Freshman)</option>
                         <option value="sophomore">2nd Year (Sophomore)</option>
                         <option value="junior">3rd Year (Junior)</option>
@@ -1252,8 +1254,8 @@
                     const profileGradeSelect = document.getElementById('profile-grade-select');
                     
                     if (profileName) profileName.innerText = name;
-                    if (profileDeptSelect && savedDept && savedDept !== 'unspecified') profileDeptSelect.value = savedDept;
-                    if (profileGradeSelect && savedGrade && savedGrade !== 'unspecified') profileGradeSelect.value = savedGrade;
+                    if (profileDeptSelect) profileDeptSelect.value = (savedDept && savedDept !== 'unspecified') ? savedDept : "unspecified";
+                    if (profileGradeSelect) profileGradeSelect.value = (savedGrade && savedGrade !== 'unspecified') ? savedGrade : "unspecified";
                 } else {
                     profilePanel.style.display = 'none';
                     authFormsContainer.style.display = 'block';
@@ -1773,7 +1775,6 @@
             
             // Handle URL Hash if present
             const currentHash = window.location.hash.replace('#', '');
-            const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
             if (currentHash === 'auth') {
                 showView('auth');
             } else if (currentHash === 'dashboard') {
