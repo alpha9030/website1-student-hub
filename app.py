@@ -9,6 +9,7 @@ import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
 
 def get_config():
     config = {}
@@ -291,7 +292,38 @@ def init_db():
     initialize_csv_from_db()
 
 def hash_password(password):
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return generate_password_hash(password)
+
+def verify_password(stored_hash, input_password):
+    # Legacy SHA-256 hashes are exactly 64 hex characters
+    if len(stored_hash) == 64 and all(c in '0123456789abcdefABCDEF' for c in stored_hash):
+        legacy_hash = hashlib.sha256(input_password.encode('utf-8')).hexdigest()
+        if legacy_hash.lower() == stored_hash.lower():
+            return True, True  # Valid, needs upgrade
+        return False, False
+        
+    try:
+        if check_password_hash(stored_hash, input_password):
+            return True, False  # Valid, no upgrade needed
+    except Exception as e:
+        print(f"Password verification error: {e}")
+    return False, False
+
+def upgrade_user_password(email, new_hash):
+    email = email.strip().lower()
+    if is_supabase_enabled():
+        supabase_request("PATCH", "users", f"email=ilike.{email}", body={"password": new_hash})
+        return
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE users SET password = ? WHERE LOWER(email) = ?", (new_hash, email))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"SQLite password upgrade error: {e}")
+    finally:
+        conn.close()
 
 # Database Helper Functions (Supabase + SQLite fallback)
 def get_user_by_email(email):
@@ -917,10 +949,18 @@ def api_login():
     if not email or not password:
         return jsonify({'success': False, 'message': 'Email and password are required'}), 400
         
-    hashed = hash_password(password)
     user = get_user_by_email_or_username(email)
+    if not user or user.get('status', 'active') != 'active':
+        return jsonify({'success': False, 'message': 'Invalid credentials or account does not exist'}), 401
+        
+    is_valid, needs_upgrade = verify_password(user['password'], password)
     
-    if user and user['password'] == hashed and user.get('status', 'active') == 'active':
+    if is_valid:
+        if needs_upgrade:
+            # Upgrade password to secure salted hash
+            new_hash = hash_password(password)
+            upgrade_user_password(user['email'], new_hash)
+            
         track_user_login(user['email'])
         updated_user = get_user_by_email(user['email'])
         return jsonify({
