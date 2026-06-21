@@ -126,6 +126,41 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def initialize_csv_from_db():
+    import csv
+    csv_file = "student_logins.csv"
+    if os.path.exists(csv_file):
+        return
+        
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT username, email, grade, dept, last_login_at, login_count 
+            FROM users 
+            WHERE last_login_at IS NOT NULL AND status = 'active'
+            ORDER BY last_login_at ASC
+        """)
+        rows = cursor.fetchall()
+        
+        with open(csv_file, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Timestamp (UTC)", "Username", "Email", "Department", "Grade", "Login Count"])
+            for row in rows:
+                writer.writerow([
+                    row['last_login_at'],
+                    row['username'],
+                    row['email'],
+                    row['dept'],
+                    row['grade'],
+                    row['login_count']
+                ])
+        print("Initialized student_logins.csv with historical logins from database.")
+    except sqlite3.Error as e:
+        print(f"SQLite error initializing CSV: {e}")
+    finally:
+        conn.close()
+
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
@@ -200,6 +235,9 @@ def init_db():
             pass
     conn.commit()
     conn.close()
+    
+    # Pre-populate CSV with existing users who have logged in
+    initialize_csv_from_db()
 
 def hash_password(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
