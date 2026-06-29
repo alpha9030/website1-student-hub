@@ -5,9 +5,21 @@
 
 (sidebarInit = function() {
     // 1. Pomodoro Focus Timer State
-    let pomodoroTimeRemaining = 25 * 60; // 25 minutes default
+    let pomodoroDurationMinutes = 25; // default
+    let pomodoroTimeRemaining = pomodoroDurationMinutes * 60;
     let pomodoroInterval = null;
     let pomodoroIsRunning = false;
+
+    window.changePomodoroDuration = function(val) {
+        const mins = parseInt(val);
+        if (isNaN(mins) || mins <= 0) return;
+        
+        pomodoroDurationMinutes = mins;
+        if (!pomodoroIsRunning) {
+            pomodoroTimeRemaining = pomodoroDurationMinutes * 60;
+            updatePomodoroDisplay();
+        }
+    };
 
     window.togglePomodoro = function() {
         const startBtn = document.getElementById('pomodoro-start-btn');
@@ -28,7 +40,7 @@
                     clearInterval(pomodoroInterval);
                     pomodoroIsRunning = false;
                     if (startBtn) startBtn.textContent = 'Start';
-                    pomodoroTimeRemaining = 25 * 60; // reset
+                    pomodoroTimeRemaining = pomodoroDurationMinutes * 60; // reset to custom value
                     updatePomodoroDisplay();
                     alert("⏱️ Focus Session Complete! Time for a short break.");
                 }
@@ -39,7 +51,7 @@
     window.resetPomodoro = function() {
         clearInterval(pomodoroInterval);
         pomodoroIsRunning = false;
-        pomodoroTimeRemaining = 25 * 60;
+        pomodoroTimeRemaining = pomodoroDurationMinutes * 60;
         updatePomodoroDisplay();
         const startBtn = document.getElementById('pomodoro-start-btn');
         if (startBtn) startBtn.textContent = 'Start';

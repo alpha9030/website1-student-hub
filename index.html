@@ -511,11 +511,23 @@
                 <!-- Card 2: Study Focus Timer -->
                 <div class="dash-stat-card mentor-card" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; border-radius: 12px;">
                     <div>
-                        <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Pomodoro Study Session</span>
+                        <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Focus Session Timer</span>
                         <h3 id="pomodoro-timer-display" style="margin: 5px 0; font-size: 24px; font-weight: 700; color: #f97316;">25:00</h3>
+                        
+                        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <label for="pomodoro-duration-select" style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin: 0;">Mins:</label>
+                            <select id="pomodoro-duration-select" onchange="changePomodoroDuration(this.value)" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-body); cursor: pointer; outline: none;">
+                                <option value="5">5</option>
+                                <option value="15">15</option>
+                                <option value="25" selected>25</option>
+                                <option value="45">45</option>
+                                <option value="60">60</option>
+                            </select>
+                        </div>
+
                         <div style="display: flex; gap: 8px;">
-                            <button id="pomodoro-start-btn" onclick="togglePomodoro()" style="background: #f97316; border: none; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Start</button>
-                            <button onclick="resetPomodoro()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-body); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Reset</button>
+                            <button id="pomodoro-start-btn" onclick="togglePomodoro()" style="background: #f97316; border: none; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Start</button>
+                            <button onclick="resetPomodoro()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-body); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Reset</button>
                         </div>
                     </div>
                     <div style="font-size: 32px;">⏱️</div>
