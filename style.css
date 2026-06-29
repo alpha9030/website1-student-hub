@@ -972,16 +972,17 @@ input[type="submit"]:hover, .btn-submit:hover {
 
 /* Premium Custom Cursor */
 .custom-cursor {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border: 2px solid var(--primary-color);
+    background-color: rgba(20, 184, 166, 0.08);
     border-radius: 50%;
     position: fixed;
     transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 100000;
     transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
-    mix-blend-mode: difference;
+    box-shadow: 0 0 10px rgba(20, 184, 166, 0.2);
     opacity: 0;
 }
 
@@ -999,32 +1000,34 @@ input[type="submit"]:hover, .btn-submit:hover {
 }
 
 .custom-cursor.hover {
-    width: 44px;
-    height: 44px;
-    background-color: rgba(20, 184, 166, 0.15);
+    width: 48px;
+    height: 48px;
+    background-color: rgba(20, 184, 166, 0.12);
     border-color: var(--primary-color);
+    box-shadow: 0 0 18px rgba(20, 184, 166, 0.35);
 }
 
 /* Cursor Ripple Effect */
 .cursor-ripple-effect {
     position: fixed;
-    border: 2px solid var(--primary-color);
+    border: 2.5px solid var(--primary-color);
+    background-color: rgba(20, 184, 166, 0.15);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 99999;
-    animation: cursorRippleAnim 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+    animation: cursorRippleAnim 0.45s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
 }
 
 @keyframes cursorRippleAnim {
     0% {
         width: 0px;
         height: 0px;
-        opacity: 0.8;
+        opacity: 0.9;
     }
     100% {
-        width: 50px;
-        height: 50px;
+        width: 65px;
+        height: 65px;
         opacity: 0;
     }
 }
