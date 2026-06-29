@@ -310,6 +310,28 @@ def init_db():
         )
     ''')
 
+    # Create mentor_profiles table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS mentor_profiles (
+            email TEXT PRIMARY KEY,
+            dept TEXT,
+            grade TEXT,
+            interests TEXT,
+            marks TEXT,
+            goals TEXT,
+            weak_subjects TEXT,
+            target_goals TEXT,
+            exam_rank INTEGER,
+            state TEXT,
+            category TEXT,
+            exam_date TEXT,
+            exam_subjects TEXT,
+            study_hours INTEGER,
+            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (email) REFERENCES users (email) ON DELETE CASCADE
+        )
+    ''')
+
     conn.commit()
     conn.close()
     
@@ -1256,6 +1278,137 @@ def api_mentor_plans():
             return jsonify({'success': True, 'message': 'Study plan deleted'})
         except sqlite3.Error as e:
             print(f"SQLite mentor plans DELETE error: {e}")
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/mentor/profile', methods=['GET', 'POST', 'OPTIONS'])
+def api_mentor_profile():
+    if request.method == 'OPTIONS':
+        return '', 204
+        
+    if request.method == 'GET':
+        email = request.args.get('email', '').strip().lower()
+        if not email:
+            return jsonify({'success': False, 'message': 'Email required'}), 400
+            
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                SELECT dept, grade, interests, marks, goals, weak_subjects, target_goals, 
+                       exam_rank, state, category, exam_date, exam_subjects, study_hours 
+                FROM mentor_profiles WHERE LOWER(email) = ?
+            ''', (email,))
+            row = cursor.fetchone()
+            if row:
+                profile = {
+                    'dept': row['dept'],
+                    'grade': row['grade'],
+                    'interests': row['interests'],
+                    'marks': row['marks'],
+                    'goals': row['goals'],
+                    'weak_subjects': row['weak_subjects'],
+                    'target_goals': row['target_goals'],
+                    'exam_rank': row['exam_rank'],
+                    'state': row['state'],
+                    'category': row['category'],
+                    'exam_date': row['exam_date'],
+                    'exam_subjects': row['exam_subjects'],
+                    'study_hours': row['study_hours']
+                }
+                return jsonify({'success': True, 'profile': profile})
+            else:
+                cursor.execute('SELECT username, grade, dept FROM users WHERE LOWER(email) = ?', (email,))
+                user_row = cursor.fetchone()
+                if user_row:
+                    grade_map = {'freshman': '1', 'sophomore': '2', 'junior': '3', 'senior': '4'}
+                    return jsonify({
+                        'success': True,
+                        'profile': {
+                            'dept': user_row['dept'],
+                            'grade': grade_map.get(user_row['grade'].lower(), '1'),
+                            'interests': '',
+                            'marks': '',
+                            'goals': '',
+                            'weak_subjects': '',
+                            'target_goals': '',
+                            'exam_rank': '',
+                            'state': '',
+                            'category': 'General',
+                            'exam_date': '',
+                            'exam_subjects': '',
+                            'study_hours': ''
+                        }
+                    })
+                return jsonify({'success': False, 'message': 'User profile not found'}), 404
+        except sqlite3.Error as e:
+            print(f"SQLite mentor profile GET error: {e}")
+            return jsonify({'success': False, 'message': 'Database error'}), 500
+        finally:
+            conn.close()
+            
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        email = data.get('email', '').strip().lower()
+        if not email:
+            return jsonify({'success': False, 'message': 'Email is required'}), 400
+            
+        dept = data.get('dept', '').strip()
+        grade = data.get('grade', '').strip()
+        interests = data.get('interests', '').strip()
+        marks = data.get('marks', '').strip()
+        goals = data.get('goals', '').strip()
+        weak_subjects = data.get('weak_subjects', '').strip()
+        target_goals = data.get('target_goals', '').strip()
+        
+        exam_rank = data.get('exam_rank')
+        try:
+            exam_rank = int(exam_rank) if exam_rank is not None and str(exam_rank).strip() != '' else None
+        except ValueError:
+            exam_rank = None
+            
+        state = data.get('state', '').strip()
+        category = data.get('category', '').strip()
+        exam_date = data.get('exam_date', '').strip()
+        exam_subjects = data.get('exam_subjects', '').strip()
+        
+        study_hours = data.get('study_hours')
+        try:
+            study_hours = int(study_hours) if study_hours is not None and str(study_hours).strip() != '' else None
+        except ValueError:
+            study_hours = None
+            
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO mentor_profiles (email, dept, grade, interests, marks, goals, weak_subjects, target_goals, 
+                                            exam_rank, state, category, exam_date, exam_subjects, study_hours, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(email) DO UPDATE SET
+                    dept = excluded.dept,
+                    grade = excluded.grade,
+                    interests = excluded.interests,
+                    marks = excluded.marks,
+                    goals = excluded.goals,
+                    weak_subjects = excluded.weak_subjects,
+                    target_goals = excluded.target_goals,
+                    exam_rank = excluded.exam_rank,
+                    state = excluded.state,
+                    category = excluded.category,
+                    exam_date = excluded.exam_date,
+                    exam_subjects = excluded.exam_subjects,
+                    study_hours = excluded.study_hours,
+                    last_updated = CURRENT_TIMESTAMP
+            ''', (email, dept, grade, interests, marks, goals, weak_subjects, target_goals, 
+                  exam_rank, state, category, exam_date, exam_subjects, study_hours))
+            conn.commit()
+            return jsonify({'success': True})
+        except sqlite3.Error as e:
+            print(f"SQLite mentor profile POST error: {e}")
             return jsonify({'success': False, 'message': 'Database error'}), 500
         finally:
             conn.close()

@@ -3760,3 +3760,200 @@ body.theme-dark .api-key-banner {
     color: var(--primary-color);
 }
 
+/* ==========================================================================
+   AI SUCCESS AGENT UPGRADED STYLES
+   ========================================================================== */
+
+.mentor-main-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mentor-tabs-nav {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+    flex-wrap: wrap;
+}
+
+.mentor-tab-btn {
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: -1px;
+}
+
+.mentor-tab-btn:hover {
+    color: var(--primary-color);
+    background: var(--bg-card);
+}
+
+.mentor-tab-btn.active {
+    color: var(--primary-color) !important;
+    background: var(--bg-container) !important;
+    border-color: var(--border-color) !important;
+    border-bottom: 1px solid var(--bg-container) !important;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.02);
+}
+
+.mentor-tab-content {
+    display: none;
+}
+
+.mentor-tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dashboard Insights Widgets */
+.mentor-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mentor-dashboard-card {
+    background: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.dashboard-text-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-body);
+    margin-top: 8px;
+}
+
+.dashboard-text-list ul, .dashboard-text-list ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.dashboard-text-list li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.checklist-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-body);
+}
+
+.checklist-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.checklist-item label {
+    cursor: pointer;
+}
+
+/* Profiles grids & items */
+.mentor-profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 768px) {
+    .mentor-profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mentor-profile-form textarea.mentor-input {
+    resize: vertical;
+}
+
+/* Stats progress bars */
+.agent-progress-bar-container {
+    height: 8px;
+    background: var(--progress-container-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.agent-progress-bar {
+    height: 100%;
+    background: var(--progress-fill-bg);
+    transition: width 0.4s cubic-bezier(0.1, 0.8, 0.2, 1);
+}
+
+.agent-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.agent-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.agent-stat-value {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mentor-header-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.mentor-badge-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.mentor-profile-form {
+    background: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+

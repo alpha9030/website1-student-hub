@@ -628,106 +628,51 @@
 
         <!-- ==================== VIEW 4: AI MENTOR ==================== -->
         <div id="mentor-panel" class="view-panel">
-            <h2 id="mentor-heading">AI Academic Mentor 🎓</h2>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">Your friendly, personalized academic counselor for career guidance, study planning, college recommendations, and doubts.</p>
+            <div class="mentor-header-title-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+                <div>
+                    <h2 id="mentor-heading" style="margin-bottom: 5px;">Academic Success Agent 🎓</h2>
+                    <p style="color: var(--text-muted); margin: 0 0 15px 0; font-size: 13.5px;">Your autonomous, context-aware student counseling and planning agent for the capstone journey.</p>
+                </div>
+                <div class="mentor-badge-badge" style="background: var(--primary-color); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Agents for Good</div>
+            </div>
             
             <!-- API Key Status Banner -->
             <div id="mentor-api-banner" class="api-key-banner" style="display: none;">
-                <span>🔑 <strong>Gemini API Key Required:</strong> To enable the AI Mentor, please enter a valid Gemini API Key from Google AI Studio.</span>
+                <span>🔑 <strong>Gemini API Key Required:</strong> To enable the Success Agent, configure a valid Gemini API Key from Google AI Studio.</span>
                 <button onclick="openMentorKeyModal()" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin: 0; background-color: var(--primary-color); border: none; color: white;">Configure Key</button>
             </div>
 
             <div class="mentor-container">
-                <!-- Left Sidebar: Parameters & Actions -->
+                <!-- Left Sidebar: Actions, Plans, and Quick Status -->
                 <div class="mentor-sidebar">
-                    <!-- Profile Preferences Card -->
+                    <!-- Agent Stat Summary Card -->
                     <div class="mentor-card">
-                        <h3>👤 Mentor Preferences</h3>
-                        
-                        <div class="mentor-form-group">
-                            <label for="mentor-interests">Academic/Career Interests:</label>
-                            <input type="text" id="mentor-interests" class="mentor-input" placeholder="e.g. Web Dev, AI/ML, Cybersecurity">
-                        </div>
-                        
-                        <div class="mentor-form-group">
-                            <label for="mentor-marks">Current GPA / Marks (%):</label>
-                            <input type="text" id="mentor-marks" class="mentor-input" placeholder="e.g. 8.5 CGPA, 85%">
-                        </div>
-                        
-                        <div class="mentor-form-group">
-                            <label for="mentor-goals">Career / Academic Goals:</label>
-                            <input type="text" id="mentor-goals" class="mentor-input" placeholder="e.g. FAANG internship, Higher Studies">
-                        </div>
-                        
-                        <!-- College Admission Predictor Section -->
-                        <div style="border-top: 1px solid var(--border-color); margin-top: 15px; padding-top: 15px;">
-                            <label style="font-weight: bold; font-size: 13px; color: var(--primary-color); display: block; margin-bottom: 8px;">College Predictor Details</label>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-rank">Exam Rank / Percentile:</label>
-                                <input type="number" id="mentor-rank" class="mentor-input" placeholder="e.g. 15000">
+                        <h3>📊 Agent Statistics</h3>
+                        <div class="agent-stats-grid" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="agent-stat-item" style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600;">
+                                    <span class="agent-stat-label">Consistency</span>
+                                    <span id="agent-consistency-text" class="agent-stat-value">0%</span>
+                                </div>
+                                <div class="agent-progress-bar-container" style="height: 8px; background: var(--progress-container-bg); border-radius: 4px; overflow: hidden;">
+                                    <div id="agent-consistency-bar" class="agent-progress-bar" style="width: 0%; height: 100%; background: var(--progress-fill-bg); transition: width 0.3s;"></div>
+                                </div>
                             </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-branch">Preferred Branch:</label>
-                                <select id="mentor-branch" class="mentor-select">
-                                    <option value="cse">CSE (Computer Science)</option>
-                                    <option value="it">IT (Information Technology)</option>
-                                    <option value="ece">ECE (Electronics & Comm)</option>
-                                    <option value="eee">EEE (Electrical & Electronics)</option>
-                                    <option value="me">ME (Mechanical)</option>
-                                    <option value="ce">CE (Civil)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-state">Preferred State / Region:</label>
-                                <input type="text" id="mentor-state" class="mentor-input" placeholder="e.g. Telangana, Maharashtra">
-                            </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-category">Admission Category:</label>
-                                <select id="mentor-category" class="mentor-select">
-                                    <option value="General">General / Open</option>
-                                    <option value="OBC">OBC</option>
-                                    <option value="SC">SC</option>
-                                    <option value="ST">ST</option>
-                                    <option value="EWS">EWS</option>
-                                </select>
+                            <div class="agent-stat-item" style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600;">
+                                    <span class="agent-stat-label">Career Readiness</span>
+                                    <span id="agent-readiness-text" class="agent-stat-value">0%</span>
+                                </div>
+                                <div class="agent-progress-bar-container" style="height: 8px; background: var(--progress-container-bg); border-radius: 4px; overflow: hidden;">
+                                    <div id="agent-readiness-bar" class="agent-progress-bar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.3s;"></div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Study Planner Section -->
-                        <div style="border-top: 1px solid var(--border-color); margin-top: 15px; padding-top: 15px;">
-                            <label style="font-weight: bold; font-size: 13px; color: var(--primary-color); display: block; margin-bottom: 8px;">Study Planner Details</label>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-exam-date">Target Exam Date:</label>
-                                <input type="date" id="mentor-exam-date" class="mentor-input">
-                            </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-exam-subjects">Subjects to Cover:</label>
-                                <input type="text" id="mentor-exam-subjects" class="mentor-input" placeholder="e.g. DSA, DBMS, OS">
-                            </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-weak-areas">Weak Areas:</label>
-                                <input type="text" id="mentor-weak-areas" class="mentor-input" placeholder="e.g. Trees, SQL Joins">
-                            </div>
-                            
-                            <div class="mentor-form-group">
-                                <label for="mentor-study-hours">Available Hours / Day:</label>
-                                <input type="number" id="mentor-study-hours" class="mentor-input" placeholder="e.g. 4" min="1" max="24">
-                            </div>
-                        </div>
-                        
-                        <button onclick="saveMentorPreferences()" class="btn btn-primary" style="width: 100%; margin-top: 12px; padding: 8px; font-weight: 600; border-radius: 8px;">💾 Save Preferences</button>
                     </div>
 
-                    <!-- Quick Action Cards -->
+                    <!-- Quick Actions -->
                     <div class="mentor-card">
-                        <h3>⚡ Quick Mentor Actions</h3>
+                        <h3>⚡ Quick Agent Actions</h3>
                         <div class="mentor-quick-actions">
                             <button onclick="triggerQuickAction('career')" class="quick-action-btn">
                                 <span class="icon">🚀</span>
@@ -748,39 +693,265 @@
                         </div>
                     </div>
 
-                    <!-- Saved Study Plans Card -->
+                    <!-- Saved Study Plans -->
                     <div class="mentor-card">
                         <h3>📁 Saved Study Plans</h3>
-                        <div id="saved-plans-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                        <div id="saved-plans-list" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
                             <p style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: center; padding: 10px 0;">No saved study plans yet.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Pane: Active Counselor Chat -->
-                <div class="mentor-chat-area">
-                    <div class="mentor-chat-header">
-                        <div class="mentor-chat-header-info">
-                            <div class="mentor-avatar">🤖</div>
-                            <div class="mentor-chat-title">
-                                <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: var(--text-body);">Academic Mentor</h4>
-                                <span id="mentor-status" class="mentor-status">Ready to assist you</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="openMentorKeyModal()" class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px; margin: 0;" title="Configure Gemini Key">⚙️ Key</button>
-                            <button onclick="clearMentorChat()" class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px; margin: 0; background: transparent; color: #ef4444; border-color: rgba(239,68,68,0.4);" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#ef4444'">🗑️ Clear</button>
-                        </div>
-                    </div>
-                    
-                    <div id="mentor-messages-container" class="mentor-chat-messages">
-                        <!-- Welcome message will be injected dynamically -->
+                <!-- Right Main Workspace: Tabbed Dashboard & Chat -->
+                <div class="mentor-main-workspace" style="display: flex; flex-direction: column; gap: 15px; flex: 1; min-width: 0;">
+                    <!-- Tab Navigation -->
+                    <div class="mentor-tabs-nav" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; flex-wrap: wrap;">
+                        <button onclick="switchMentorTab('chat')" id="tab-btn-chat" class="mentor-tab-btn active">💬 Agent Chat</button>
+                        <button onclick="switchMentorTab('dashboard')" id="tab-btn-dashboard" class="mentor-tab-btn">📈 Insights Dashboard</button>
+                        <button onclick="switchMentorTab('profile')" id="tab-btn-profile" class="mentor-tab-btn">👤 Success Profile</button>
+                        <button onclick="switchMentorTab('resources')" id="tab-btn-resources" class="mentor-tab-btn">📚 Resources</button>
+                        <button onclick="switchMentorTab('plans')" id="tab-btn-plans" class="mentor-tab-btn">⏳ Adapt Plans</button>
                     </div>
 
-                    <!-- Input Section -->
-                    <div class="mentor-chat-input-area">
-                        <input type="text" id="mentor-chat-input" class="mentor-chat-input" placeholder="Type a message to your mentor..." onkeydown="handleMentorInputKey(event)">
-                        <button onclick="sendMentorMessage()" class="mentor-send-btn">➔</button>
+                    <!-- Tab Content: Chat -->
+                    <div id="mentor-tab-chat" class="mentor-tab-content active">
+                        <div class="mentor-chat-area" style="height: 540px; border: none; box-shadow: none; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                            <div class="mentor-chat-header">
+                                <div class="mentor-chat-header-info">
+                                    <div class="mentor-avatar">🤖</div>
+                                    <div class="mentor-chat-title">
+                                        <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-body);">Academic Success Agent</h4>
+                                        <span id="mentor-status" class="mentor-status">Ready to assist you</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="openMentorKeyModal()" class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px; margin: 0;" title="Configure Gemini Key">⚙️ Key</button>
+                                    <button onclick="clearMentorChat()" class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px; margin: 0; background: transparent; color: #ef4444; border-color: rgba(239,68,68,0.4);" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#ef4444'">🗑️ Clear</button>
+                                </div>
+                            </div>
+                            
+                            <div id="mentor-messages-container" class="mentor-chat-messages">
+                                <!-- Dynamic chat history -->
+                            </div>
+
+                            <!-- Input Area -->
+                            <div class="mentor-chat-input-area">
+                                <input type="text" id="mentor-chat-input" class="mentor-chat-input" placeholder="Ask anything about studies, schedules, prep or college recommendations..." onkeydown="handleMentorInputKey(event)">
+                                <button onclick="sendMentorMessage()" class="mentor-send-btn">➔</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Insights Dashboard -->
+                    <div id="mentor-tab-dashboard" class="mentor-tab-content">
+                        <div class="mentor-dashboard-container">
+                            <div class="mentor-dashboard-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <!-- Academic Strength Widget -->
+                                <div class="mentor-dashboard-card mentor-card">
+                                    <h4 style="margin-top: 0; color: var(--primary-color); font-size: 14px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">💪 Academic Strengths</h4>
+                                    <div id="dashboard-strengths-list" class="dashboard-text-list">
+                                        <p style="color: var(--text-muted); font-size: 13px; margin: 0;">Save profile details to let the Agent analyze your strengths.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Weak Areas Widget -->
+                                <div class="mentor-dashboard-card mentor-card">
+                                    <h4 style="margin-top: 0; color: #ef4444; font-size: 14px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">⚠️ Development Areas</h4>
+                                    <div id="dashboard-weaknesses-list" class="dashboard-text-list">
+                                        <p style="color: var(--text-muted); font-size: 13px; margin: 0;">Save profile details to let the Agent analyze your weaknesses.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommended Focus Areas & Goals -->
+                            <div class="mentor-dashboard-card mentor-card">
+                                <h4 style="margin-top: 0; color: var(--primary-color); font-size: 14px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">🎯 Weekly Proactive Goals & Focus Areas</h4>
+                                <div id="dashboard-recommendations-list" style="line-height: 1.6; font-size: 13.5px; color: var(--text-body);">
+                                    <p style="color: var(--text-muted); text-align: center; padding: 20px 0; margin: 0;">Click below to let the Success Agent generate proactive weekly recommendations based on your current profile.</p>
+                                </div>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <button onclick="fetchProactiveRecommendations()" class="btn btn-primary" style="padding: 8px 16px; font-weight: 600; border-radius: 8px;">⚡ Fetch Proactive Recommendations</button>
+                                </div>
+                            </div>
+
+                            <!-- Personal Action Items List -->
+                            <div class="mentor-dashboard-card mentor-card" style="margin-top: 15px;">
+                                <h4 style="margin-top: 0; color: var(--primary-color); font-size: 14px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">✅ Academic Task Checklist</h4>
+                                <div id="dashboard-action-items-list" class="checklist-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                                    <div class="checklist-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                                        <input type="checkbox" id="chk-prof-complete" onchange="updateConsistency()">
+                                        <label for="chk-prof-complete">Complete Student Profile configuration</label>
+                                    </div>
+                                    <div class="checklist-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                                        <input type="checkbox" id="chk-gkey" onchange="updateConsistency()">
+                                        <label for="chk-gkey">Configure Google Gemini API Key</label>
+                                    </div>
+                                    <div class="checklist-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                                        <input type="checkbox" id="chk-study-plan" onchange="updateConsistency()">
+                                        <label for="chk-study-plan">Create first study plan</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Success Profile -->
+                    <div id="mentor-tab-profile" class="mentor-tab-content">
+                        <div class="mentor-profile-form mentor-card">
+                            <h3 style="margin-top: 0; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 16px; font-weight: 700;">👤 Academic Success Profile Configuration</h3>
+                            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">This profile is persisted in the secure database. The Success Agent references this context before composing any response to customize learning recommendations.</p>
+                            
+                            <div class="mentor-profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="mentor-form-group">
+                                    <label for="profile-academic-branch">Academic Branch / Department:</label>
+                                    <select id="profile-academic-branch" class="mentor-select">
+                                        <option value="cse">Computer Science & Engineering (CSE)</option>
+                                        <option value="it">Information Technology (IT)</option>
+                                        <option value="ece">Electronics & Communication Engineering (ECE)</option>
+                                        <option value="eee">Electrical & Electronics Engineering (EEE)</option>
+                                        <option value="me">Mechanical Engineering (ME)</option>
+                                        <option value="ce">Civil Engineering (CE)</option>
+                                        <option value="bca">Bachelor of Computer Applications (BCA)</option>
+                                    </select>
+                                </div>
+                                <div class="mentor-form-group">
+                                    <label for="profile-academic-year">Year of Study:</label>
+                                    <select id="profile-academic-year" class="mentor-select">
+                                        <option value="1">1st Year (Freshman)</option>
+                                        <option value="2">2nd Year (Sophomore)</option>
+                                        <option value="3">3rd Year (Junior)</option>
+                                        <option value="4">4th Year (Senior)</option>
+                                    </select>
+                                </div>
+                                <div class="mentor-form-group">
+                                    <label for="profile-academic-cgpa">Current CGPA / Mark Percentage (%):</label>
+                                    <input type="text" id="profile-academic-cgpa" class="mentor-input" placeholder="e.g. 8.5 CGPA, 85%">
+                                </div>
+                                <div class="mentor-form-group">
+                                    <label for="profile-academic-interests">Areas of Interest (comma separated):</label>
+                                    <input type="text" id="profile-academic-interests" class="mentor-input" placeholder="e.g. Web Dev, Machine Learning, UI/UX">
+                                </div>
+                            </div>
+
+                            <div class="mentor-form-group" style="margin-top: 12px;">
+                                <label for="profile-academic-goals">Short-Term Semester Goals:</label>
+                                <textarea id="profile-academic-goals" class="mentor-input" style="height: 60px; font-family: inherit; resize: vertical;" placeholder="e.g. Score 9.0+ GPA this semester, master arrays & recursion, pass Python certification."></textarea>
+                            </div>
+
+                            <div class="mentor-form-group" style="margin-top: 12px;">
+                                <label for="profile-academic-weak">Weak Subjects & Difficult Topics:</label>
+                                <input type="text" id="profile-academic-weak" class="mentor-input" placeholder="e.g. DBMS Normalization, OS Semaphore, Graph Traversals">
+                            </div>
+
+                            <div class="mentor-form-group" style="margin-top: 12px;">
+                                <label for="profile-academic-career">Long-Term Career Aspirations / Higher Studies Goals:</label>
+                                <input type="text" id="profile-academic-career" class="mentor-input" placeholder="e.g. Backend Dev at product firm, MS in Data Science in USA">
+                            </div>
+
+                            <div class="mentor-form-group" style="margin-top: 12px;">
+                                <label for="profile-academic-companies">Target Companies or Target Universities:</label>
+                                <input type="text" id="profile-academic-companies" class="mentor-input" placeholder="e.g. Google, Microsoft, Amazon, Stanford, gate-prep">
+                            </div>
+
+                            <!-- Predictor Details Sub-Panel -->
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 20px; padding-top: 15px;">
+                                <h4 style="margin: 0 0 10px 0; color: var(--primary-color); font-size: 14px; font-weight: 700;">🏫 Admission / Entrance Predictor Details</h4>
+                                <div class="mentor-profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="mentor-form-group">
+                                        <label for="profile-pred-rank">Exam Rank / Percentile:</label>
+                                        <input type="number" id="profile-pred-rank" class="mentor-input" placeholder="e.g. 15000">
+                                    </div>
+                                    <div class="mentor-form-group">
+                                        <label for="profile-pred-branch">Preferred Target Branch:</label>
+                                        <select id="profile-pred-branch" class="mentor-select">
+                                            <option value="cse">CSE (Computer Science)</option>
+                                            <option value="it">IT (Information Technology)</option>
+                                            <option value="ece">ECE (Electronics & Comm)</option>
+                                            <option value="eee">EEE (Electrical & Electronics)</option>
+                                            <option value="me">ME (Mechanical)</option>
+                                            <option value="ce">CE (Civil)</option>
+                                            <option value="bca">BCA (Computer Applications)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mentor-form-group">
+                                        <label for="profile-pred-state">State / Region Preference:</label>
+                                        <input type="text" id="profile-pred-state" class="mentor-input" placeholder="e.g. Telangana, Karnataka, All India">
+                                    </div>
+                                    <div class="mentor-form-group">
+                                        <label for="profile-pred-category">Category Standing:</label>
+                                        <select id="profile-pred-category" class="mentor-select">
+                                            <option value="General">General / Open</option>
+                                            <option value="OBC">OBC</option>
+                                            <option value="SC">SC</option>
+                                            <option value="ST">ST</option>
+                                            <option value="EWS">EWS</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Study Planner Details Sub-Panel -->
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 20px; padding-top: 15px;">
+                                <h4 style="margin: 0 0 10px 0; color: var(--primary-color); font-size: 14px; font-weight: 700;">📅 Exam Study Planner Defaults</h4>
+                                <div class="mentor-profile-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="mentor-form-group">
+                                        <label for="profile-plan-date">Target Exam Date:</label>
+                                        <input type="date" id="profile-plan-date" class="mentor-input">
+                                    </div>
+                                    <div class="mentor-form-group">
+                                        <label for="profile-plan-subjects">Subjects to Study:</label>
+                                        <input type="text" id="profile-plan-subjects" class="mentor-input" placeholder="e.g. DSA, DBMS, Operating Systems">
+                                    </div>
+                                    <div class="mentor-form-group">
+                                        <label for="profile-plan-hours">Study Hours / Day:</label>
+                                        <input type="number" id="profile-plan-hours" class="mentor-input" placeholder="e.g. 4" min="1" max="24">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="saveStudentMentorProfile()" class="btn btn-primary" style="width: 100%; margin-top: 24px; padding: 12px; font-weight: 700; border-radius: 8px; font-size: 15px;">💾 Save and Synchronize Success Profile</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Resources Recommendations -->
+                    <div id="mentor-tab-resources" class="mentor-tab-content">
+                        <div class="mentor-dashboard-card mentor-card">
+                            <h3 style="margin-top:0; color: var(--primary-color); font-size: 16px; font-weight: 700;">📚 Smart Resource Recommendations</h3>
+                            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Curated textbooks, online interactive courses, project ideas, and certifications tailored dynamically to your department, weak subjects, and career goals.</p>
+                            
+                            <div id="resources-recommendation-output" style="line-height: 1.6; font-size: 13.5px; color: var(--text-body);">
+                                <p style="color: var(--text-muted); text-align: center; padding: 30px 0; margin: 0;">Click the button below to parse your profile fields and request personalized learning materials and explanations.</p>
+                            </div>
+                            <div style="text-align: center; margin-top: 15px;">
+                                <button onclick="fetchMentorResourceRecommendations()" class="btn btn-primary" style="padding: 8px 16px; font-weight: 600; border-radius: 8px;">🎯 Load Smart Resources</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Adapt Plans -->
+                    <div id="mentor-tab-plans" class="mentor-tab-content">
+                        <div class="mentor-dashboard-card mentor-card">
+                            <h3 style="margin-top:0; color: var(--primary-color); font-size: 16px; font-weight: 700;">⏳ Adaptive Plan Controller</h3>
+                            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">If you miss a study session or fall behind schedule, don't worry. This tool compiles your current checklist progress and regenerates your daily timetables adjusting for remaining hours.</p>
+                            
+                            <div class="adapt-card" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px dashed var(--border-color); margin-bottom: 20px;">
+                                <h4 style="margin-top:0; color: var(--primary-color); font-size: 14px; font-weight: 700;">🔄 Regenerate/Adapt Study Schedule</h4>
+                                <div class="mentor-form-group">
+                                    <label for="adapt-days-missed">Estimated study sessions/days missed:</label>
+                                    <input type="number" id="adapt-days-missed" class="mentor-input" value="1" min="1" max="30" style="max-width: 150px;">
+                                </div>
+                                <div class="mentor-form-group" style="margin-top: 10px;">
+                                    <label for="adapt-current-status">Briefly describe what you have achieved so far (if anything):</label>
+                                    <input type="text" id="adapt-current-status" class="mentor-input" placeholder="e.g. Mastered arrays, but did not study recursion.">
+                                </div>
+                                <button onclick="triggerAdaptiveReplan()" class="btn btn-primary" style="margin-top: 15px; font-weight: 600; padding: 8px 16px; border-radius: 8px;">🔄 Regenerate Plan with AI Agent</button>
+                            </div>
+                            
+                            <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700;">📋 Saved Timetables Overview</h4>
+                            <div id="adaptive-saved-plans-overview" style="display: flex; flex-direction: column; gap: 8px;">
+                                <p style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: center; padding: 10px 0;">No plans loaded.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

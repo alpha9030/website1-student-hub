@@ -1,12 +1,11 @@
 /**
- * StudentHub AI Mentor
- * Intelligent educational assistant for career guidance, study planning, college recommendations, and doubt solving.
- * Integrates directly with the Gemini API and stores chat histories/study plans via Flask backend APIs.
+ * StudentHub AI Academic Success Agent
+ * Acts as an autonomous context-aware educational counselor under 'Agents for Good'.
+ * Connects to Gemini and synchronizes with SQLite backend settings, chats, and profiles.
  */
 
 (function() {
-    // 1. Initial State & Configurations
-    let chatMemory = []; // Session history formatted for Gemini API
+    let chatMemory = [];
     let isTyping = false;
     let studentProfile = {
         name: 'Student',
@@ -15,39 +14,47 @@
         grade: '',
         isLoggedIn: false
     };
+    
+    // Configured Success Profile fields
+    let successProfile = {
+        dept: 'cse',
+        grade: '1',
+        interests: '',
+        marks: '',
+        goals: '',
+        weak_subjects: '',
+        target_goals: '',
+        exam_rank: '',
+        state: '',
+        category: 'General',
+        exam_date: '',
+        exam_subjects: '',
+        study_hours: ''
+    };
 
-    // Initialize module on page load
     window.addEventListener('DOMContentLoaded', () => {
         initMentor();
     });
 
-    // Check if view switching triggers mentor reload
     const originalShowView = window.showView;
     window.showView = function(viewId) {
         if (originalShowView) originalShowView(viewId);
         if (viewId === 'mentor') {
             loadStudentProfile();
-            loadMentorPreferences();
-            checkApiKeyStatus();
-            loadChatHistory();
-            loadSavedPlans();
         }
     };
 
-    // Initialize all components
     function initMentor() {
         loadStudentProfile();
-        loadMentorPreferences();
-        checkApiKeyStatus();
         
-        // Load history and plans if already on the mentor view at startup
         const currentHash = window.location.hash.replace('#', '');
         if (currentHash === 'mentor' || (document.getElementById('mentor-panel') && document.getElementById('mentor-panel').classList.contains('active'))) {
+            // Already active on reload
             loadChatHistory();
             loadSavedPlans();
+            loadSuccessProfile();
         }
-        
-        // Listen to storage changes (e.g. if key is updated in Aura chatbot settings)
+
         window.addEventListener('storage', (e) => {
             if (e.key === 'aura_api_key') {
                 checkApiKeyStatus();
@@ -55,7 +62,6 @@
         });
     }
 
-    // Load student profile from localStorage
     function loadStudentProfile() {
         const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
         studentProfile.isLoggedIn = loggedIn;
@@ -65,17 +71,20 @@
             studentProfile.dept = localStorage.getItem('studentDept') || '';
             studentProfile.grade = localStorage.getItem('studentGrade') || '';
             
-            // Sync API key and histories from backend DB
             syncApiKeyFromBackend();
+            loadSuccessProfile();
         } else {
             studentProfile.name = 'Guest';
             studentProfile.email = '';
             studentProfile.dept = '';
             studentProfile.grade = '';
+            loadSuccessProfileLocal();
         }
+        checkApiKeyStatus();
+        loadChatHistory();
+        loadSavedPlans();
     }
 
-    // Synchronize API key from chatbot settings backend
     async function syncApiKeyFromBackend() {
         if (!studentProfile.email) return;
         try {
@@ -89,96 +98,310 @@
                 }
             }
         } catch (e) {
-            console.warn("Could not sync API key from settings backend:", e);
+            console.warn("Could not sync API key:", e);
         }
     }
 
-    // Load user mentor inputs (interests, marks, etc.) from localStorage
-    function loadMentorPreferences() {
-        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
+    // Switch Tabs inside Workspace
+    window.switchMentorTab = function(tabId) {
+        // Toggle tab buttons
+        const buttons = document.querySelectorAll('.mentor-tab-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
         
-        document.getElementById('mentor-interests').value = localStorage.getItem('mentor_interests' + suffix) || '';
-        document.getElementById('mentor-marks').value = localStorage.getItem('mentor_marks' + suffix) || '';
-        document.getElementById('mentor-goals').value = localStorage.getItem('mentor_goals' + suffix) || '';
-        
-        document.getElementById('mentor-rank').value = localStorage.getItem('mentor_rank' + suffix) || '';
-        document.getElementById('mentor-branch').value = localStorage.getItem('mentor_branch' + suffix) || 'cse';
-        document.getElementById('mentor-state').value = localStorage.getItem('mentor_state' + suffix) || '';
-        document.getElementById('mentor-category').value = localStorage.getItem('mentor_category' + suffix) || 'General';
-        
-        document.getElementById('mentor-exam-date').value = localStorage.getItem('mentor_exam_date' + suffix) || '';
-        document.getElementById('mentor-exam-subjects').value = localStorage.getItem('mentor_exam_subjects' + suffix) || '';
-        document.getElementById('mentor-weak-areas').value = localStorage.getItem('mentor_weak_areas' + suffix) || '';
-        document.getElementById('mentor-study-hours').value = localStorage.getItem('mentor_study_hours' + suffix) || '';
-    }
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+        if (activeBtn) activeBtn.classList.add('active');
 
-    // Save user mentor inputs to localStorage
-    window.saveMentorPreferences = function() {
-        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
+        // Toggle tab contents
+        const contents = document.querySelectorAll('.mentor-tab-content');
+        contents.forEach(cnt => cnt.classList.remove('active'));
         
-        const interests = document.getElementById('mentor-interests').value.trim();
-        const marks = document.getElementById('mentor-marks').value.trim();
-        const goals = document.getElementById('mentor-goals').value.trim();
-        
-        const rank = document.getElementById('mentor-rank').value.trim();
-        const branch = document.getElementById('mentor-branch').value;
-        const state = document.getElementById('mentor-state').value.trim();
-        const category = document.getElementById('mentor-category').value;
-        
-        const examDate = document.getElementById('mentor-exam-date').value;
-        const examSubjects = document.getElementById('mentor-exam-subjects').value.trim();
-        const weakAreas = document.getElementById('mentor-weak-areas').value.trim();
-        const studyHours = document.getElementById('mentor-study-hours').value.trim();
+        const activeContent = document.getElementById('mentor-tab-' + tabId);
+        if (activeContent) activeContent.classList.add('active');
 
-        localStorage.setItem('mentor_interests' + suffix, interests);
-        localStorage.setItem('mentor_marks' + suffix, marks);
-        localStorage.setItem('mentor_goals' + suffix, goals);
-        
-        localStorage.setItem('mentor_rank' + suffix, rank);
-        localStorage.setItem('mentor_branch' + suffix, branch);
-        localStorage.setItem('mentor_state' + suffix, state);
-        localStorage.setItem('mentor_category' + suffix, category);
-        
-        localStorage.setItem('mentor_exam_date' + suffix, examDate);
-        localStorage.setItem('mentor_exam_subjects' + suffix, examSubjects);
-        localStorage.setItem('mentor_weak_areas' + suffix, weakAreas);
-        localStorage.setItem('mentor_study_hours' + suffix, studyHours);
-
-        alert("Preferences saved successfully!");
+        if (tabId === 'dashboard') {
+            updateConsistency();
+            updateDashboardStrengthsWeaknesses();
+        }
     };
 
-    // Check if Gemini API key is configured
+    // Load Success Profile
+    async function loadSuccessProfile() {
+        if (studentProfile.isLoggedIn && studentProfile.email) {
+            try {
+                const resp = await fetch(`/api/mentor/profile?email=${encodeURIComponent(studentProfile.email)}`);
+                const data = await resp.json();
+                if (data.success && data.profile) {
+                    successProfile = data.profile;
+                    populateProfileFields();
+                    updateConsistency();
+                    updateDashboardStrengthsWeaknesses();
+                    return;
+                }
+            } catch (e) {
+                console.warn("Failed to load profile from database:", e);
+            }
+        }
+        loadSuccessProfileLocal();
+    }
+
+    function loadSuccessProfileLocal() {
+        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
+        
+        successProfile = {
+            dept: localStorage.getItem('mentor_branch' + suffix) || studentProfile.dept || 'cse',
+            grade: localStorage.getItem('mentor_grade' + suffix) || '1',
+            interests: localStorage.getItem('mentor_interests' + suffix) || '',
+            marks: localStorage.getItem('mentor_marks' + suffix) || '',
+            goals: localStorage.getItem('mentor_goals' + suffix) || '',
+            weak_subjects: localStorage.getItem('mentor_weak_subjects' + suffix) || '',
+            target_goals: localStorage.getItem('mentor_target_goals' + suffix) || '',
+            exam_rank: localStorage.getItem('mentor_exam_rank' + suffix) || '',
+            state: localStorage.getItem('mentor_state' + suffix) || '',
+            category: localStorage.getItem('mentor_category' + suffix) || 'General',
+            exam_date: localStorage.getItem('mentor_exam_date' + suffix) || '',
+            exam_subjects: localStorage.getItem('mentor_exam_subjects' + suffix) || '',
+            study_hours: localStorage.getItem('mentor_study_hours' + suffix) || ''
+        };
+        
+        populateProfileFields();
+        updateConsistency();
+        updateDashboardStrengthsWeaknesses();
+    }
+
+    function populateProfileFields() {
+        document.getElementById('profile-academic-branch').value = successProfile.dept || 'cse';
+        document.getElementById('profile-academic-year').value = successProfile.grade || '1';
+        document.getElementById('profile-academic-cgpa').value = successProfile.marks || '';
+        document.getElementById('profile-academic-interests').value = successProfile.interests || '';
+        document.getElementById('profile-academic-goals').value = successProfile.goals || '';
+        document.getElementById('profile-academic-weak').value = successProfile.weak_subjects || '';
+        document.getElementById('profile-academic-career').value = successProfile.target_goals || '';
+        document.getElementById('profile-academic-companies').value = successProfile.target_goals || ''; 
+
+        // Predictor fields
+        document.getElementById('profile-pred-rank').value = successProfile.exam_rank || '';
+        document.getElementById('profile-pred-branch').value = successProfile.dept || 'cse';
+        document.getElementById('profile-pred-state').value = successProfile.state || '';
+        document.getElementById('profile-pred-category').value = successProfile.category || 'General';
+
+        // Planner fields
+        document.getElementById('profile-plan-date').value = successProfile.exam_date || '';
+        document.getElementById('profile-plan-subjects').value = successProfile.exam_subjects || '';
+        document.getElementById('profile-plan-hours').value = successProfile.study_hours || '';
+    }
+
+    // Save success profile
+    window.saveStudentMentorProfile = async function() {
+        const branch = document.getElementById('profile-academic-branch').value;
+        const year = document.getElementById('profile-academic-year').value;
+        const marks = document.getElementById('profile-academic-cgpa').value.trim();
+        const interests = document.getElementById('profile-academic-interests').value.trim();
+        const goals = document.getElementById('profile-academic-goals').value.trim();
+        const weakSubjects = document.getElementById('profile-academic-weak').value.trim();
+        const targetGoals = document.getElementById('profile-academic-career').value.trim();
+        
+        // Predictor
+        const rank = document.getElementById('profile-pred-rank').value;
+        const state = document.getElementById('profile-pred-state').value.trim();
+        const category = document.getElementById('profile-pred-category').value;
+        
+        // Planner
+        const examDate = document.getElementById('profile-plan-date').value;
+        const planSubjects = document.getElementById('profile-plan-subjects').value.trim();
+        const planHours = document.getElementById('profile-plan-hours').value;
+
+        successProfile = {
+            dept: branch,
+            grade: year,
+            interests: interests,
+            marks: marks,
+            goals: goals,
+            weak_subjects: weakSubjects,
+            target_goals: targetGoals,
+            exam_rank: rank,
+            state: state,
+            category: category,
+            exam_date: examDate,
+            exam_subjects: planSubjects,
+            study_hours: planHours
+        };
+
+        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
+
+        // Save local
+        localStorage.setItem('mentor_branch' + suffix, branch);
+        localStorage.setItem('mentor_grade' + suffix, year);
+        localStorage.setItem('mentor_marks' + suffix, marks);
+        localStorage.setItem('mentor_interests' + suffix, interests);
+        localStorage.setItem('mentor_goals' + suffix, goals);
+        localStorage.setItem('mentor_weak_subjects' + suffix, weakSubjects);
+        localStorage.setItem('mentor_target_goals' + suffix, targetGoals);
+        localStorage.setItem('mentor_exam_rank' + suffix, rank);
+        localStorage.setItem('mentor_state' + suffix, state);
+        localStorage.setItem('mentor_category' + suffix, category);
+        localStorage.setItem('mentor_exam_date' + suffix, examDate);
+        localStorage.setItem('mentor_exam_subjects' + suffix, planSubjects);
+        localStorage.setItem('mentor_study_hours' + suffix, planHours);
+
+        // Sync to DB
+        if (studentProfile.isLoggedIn && studentProfile.email) {
+            try {
+                const resp = await fetch('/api/mentor/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: studentProfile.email,
+                        dept: branch,
+                        grade: year,
+                        interests: interests,
+                        marks: marks,
+                        goals: goals,
+                        weak_subjects: weakSubjects,
+                        target_goals: targetGoals,
+                        exam_rank: rank,
+                        state: state,
+                        category: category,
+                        exam_date: examDate,
+                        exam_subjects: planSubjects,
+                        study_hours: planHours
+                    })
+                });
+                const res = await resp.json();
+                if (res.success) {
+                    document.getElementById('chk-prof-complete').checked = true;
+                    alert("Academic Success Profile saved & synchronized with cloud database!");
+                } else {
+                    alert("Profile saved locally (database sync failed: " + res.message + ")");
+                }
+            } catch (e) {
+                console.warn("Could not sync profile to backend:", e);
+                alert("Profile saved locally (database connection failed).");
+            }
+        } else {
+            document.getElementById('chk-prof-complete').checked = true;
+            alert("Success Profile saved locally!");
+        }
+
+        updateConsistency();
+        updateDashboardStrengthsWeaknesses();
+    };
+
+    // Calculate Consistency & Readiness scores
+    window.updateConsistency = function() {
+        let completenessPoints = 0;
+        let totalCompleteness = 6;
+        
+        if (successProfile.interests) completenessPoints++;
+        if (successProfile.marks) completenessPoints++;
+        if (successProfile.goals) completenessPoints++;
+        if (successProfile.weak_subjects) completenessPoints++;
+        if (successProfile.target_goals) completenessPoints++;
+        if (successProfile.exam_date) completenessPoints++;
+
+        let checklistPoints = 0;
+        let totalChecklist = 3;
+        if (document.getElementById('chk-prof-complete') && document.getElementById('chk-prof-complete').checked) checklistPoints++;
+        if (document.getElementById('chk-gkey') && document.getElementById('chk-gkey').checked) checklistPoints++;
+        if (document.getElementById('chk-study-plan') && document.getElementById('chk-study-plan').checked) checklistPoints++;
+
+        // Consistency score
+        const consistencyVal = Math.round(((completenessPoints + checklistPoints) / (totalCompleteness + totalChecklist)) * 100);
+        const consistencyText = document.getElementById('agent-consistency-text');
+        const consistencyBar = document.getElementById('agent-consistency-bar');
+        if (consistencyText) consistencyText.textContent = consistencyVal + '%';
+        if (consistencyBar) consistencyBar.style.width = consistencyVal + '%';
+
+        // Career readiness
+        let readinessVal = 0;
+        if (successProfile.marks) {
+            const marksNum = parseFloat(successProfile.marks);
+            if (!isNaN(marksNum)) {
+                if (marksNum >= 9.0 || marksNum >= 90) readinessVal += 40;
+                else if (marksNum >= 8.0 || marksNum >= 80) readinessVal += 35;
+                else if (marksNum >= 7.0 || marksNum >= 70) readinessVal += 30;
+                else readinessVal += 20;
+            } else {
+                readinessVal += 25;
+            }
+        }
+        if (successProfile.interests && successProfile.interests.length > 5) readinessVal += 20;
+        if (successProfile.target_goals && successProfile.target_goals.length > 5) readinessVal += 20;
+        if (checklistPoints === totalChecklist) readinessVal += 20;
+
+        const readinessText = document.getElementById('agent-readiness-text');
+        const readinessBar = document.getElementById('agent-readiness-bar');
+        if (readinessText) readinessText.textContent = readinessVal + '%';
+        if (readinessBar) readinessBar.style.width = readinessVal + '%';
+    };
+
+    function updateDashboardStrengthsWeaknesses() {
+        const strengthsList = document.getElementById('dashboard-strengths-list');
+        const weakList = document.getElementById('dashboard-weaknesses-list');
+        if (!strengthsList || !weakList) return;
+
+        // Strengths
+        if (successProfile.interests || successProfile.marks) {
+            let strengthsHTML = '<ul style="margin: 0; padding-left: 20px;">';
+            if (successProfile.marks) {
+                strengthsHTML += `<li><strong>Academic Standing:</strong> Current score of ${successProfile.marks}.</li>`;
+            }
+            if (successProfile.interests) {
+                strengthsHTML += `<li><strong>Technical Alignment:</strong> Core focus in ${successProfile.interests}.</li>`;
+            }
+            strengthsHTML += `<li><strong>Curriculum Sync:</strong> Specializing in ${successProfile.dept.toUpperCase()} (Year ${successProfile.grade}).</li>`;
+            strengthsHTML += '</ul>';
+            strengthsList.innerHTML = strengthsHTML;
+        } else {
+            strengthsList.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; margin: 0;">Save profile details to let the Agent analyze your strengths.</p>';
+        }
+
+        // Weaknesses
+        if (successProfile.weak_subjects) {
+            let weakHTML = '<ul style="margin: 0; padding-left: 20px;">';
+            const topics = successProfile.weak_subjects.split(',');
+            topics.forEach(topic => {
+                weakHTML += `<li>Requires concept strengthening and extra practice in <strong>${topic.trim()}</strong>.</li>`;
+            });
+            weakHTML += '</ul>';
+            weakList.innerHTML = weakHTML;
+        } else {
+            weakList.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; margin: 0;">Save profile details to let the Agent analyze your weaknesses.</p>';
+        }
+    }
+
+    // Check API Key
     function checkApiKeyStatus() {
         const key = localStorage.getItem('aura_api_key') || '';
         const banner = document.getElementById('mentor-api-banner');
         const chatInput = document.getElementById('mentor-chat-input');
         const sendBtn = document.querySelector('.mentor-send-btn');
         const quickBtns = document.querySelectorAll('.quick-action-btn');
+        const gkeyCheck = document.getElementById('chk-gkey');
 
         if (!key) {
-            banner.style.display = 'flex';
-            chatInput.disabled = true;
-            sendBtn.disabled = true;
+            if (banner) banner.style.display = 'flex';
+            if (chatInput) chatInput.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
             quickBtns.forEach(btn => btn.disabled = true);
+            if (gkeyCheck) gkeyCheck.checked = false;
         } else {
-            banner.style.display = 'none';
-            chatInput.disabled = false;
-            sendBtn.disabled = false;
+            if (banner) banner.style.display = 'none';
+            if (chatInput) chatInput.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
             quickBtns.forEach(btn => btn.disabled = false);
+            if (gkeyCheck) gkeyCheck.checked = true;
         }
+        updateConsistency();
     }
 
-    // Modal controllers for configuring Gemini key
     window.openMentorKeyModal = function() {
         const modal = document.getElementById('mentor-key-modal');
-        const keyInput = document.getElementById('mentor-key-input');
-        keyInput.value = localStorage.getItem('aura_api_key') || '';
+        document.getElementById('mentor-key-input').value = localStorage.getItem('aura_api_key') || '';
         modal.classList.add('active');
     };
 
     window.closeMentorKeyModal = function() {
-        const modal = document.getElementById('mentor-key-modal');
-        modal.classList.remove('active');
+        document.getElementById('mentor-key-modal').classList.remove('active');
     };
 
     window.saveMentorKey = function() {
@@ -189,36 +412,32 @@
         }
 
         localStorage.setItem('aura_api_key', keyInput);
-        
-        // Also sync key to database if logged in
         if (studentProfile.isLoggedIn && studentProfile.email) {
             const userName = studentProfile.name;
-            const mode = localStorage.getItem('aura_mode') || 'gemini';
             fetch('/api/chatbot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: studentProfile.email,
-                    aura_mode: mode,
+                    aura_mode: 'gemini',
                     aura_api_key: keyInput,
                     aura_user_name: userName
                 })
-            }).catch(err => console.warn("Failed to sync new API Key with backend:", err));
+            }).catch(err => console.warn("Failed to sync key to backend:", err));
         }
 
         checkApiKeyStatus();
         closeMentorKeyModal();
         alert("API Key saved successfully!");
-        
-        // If chat is currently empty, show the welcome screen
         if (chatMemory.length === 0) {
             loadChatHistory();
         }
     };
 
-    // Load Chat History from DB or Local Memory
+    // Load Chat History
     async function loadChatHistory() {
         const container = document.getElementById('mentor-messages-container');
+        if (!container) return;
         container.innerHTML = '';
         chatMemory = [];
 
@@ -232,7 +451,6 @@
                 if (data.success && data.chats && data.chats.length > 0) {
                     data.chats.forEach(chat => {
                         appendMessageUI(chat.sender === 'user' ? 'user' : 'bot', chat.message, new Date(chat.timestamp));
-                        // Save in memory history
                         chatMemory.push({
                             role: chat.sender === 'user' ? 'user' : 'model',
                             parts: [{ text: chat.message }]
@@ -242,11 +460,10 @@
                     return;
                 }
             } catch (e) {
-                console.warn("Could not load chat history from database:", e);
+                console.warn("Could not load chats:", e);
             }
         }
         
-        // Fallback to local session storage / welcome screen
         hideTyping();
         const guestHistory = sessionStorage.getItem('mentor_chat_history_guest');
         if (guestHistory) {
@@ -261,28 +478,28 @@
             } catch(e) {}
         }
 
-        // Show Default Welcome Message
         showInitialWelcome();
     }
 
     function showInitialWelcome() {
         const container = document.getElementById('mentor-messages-container');
+        if (!container) return;
         container.innerHTML = '';
         
-        const welcomeText = `👋 Hello **${studentProfile.name}**! Welcome to your **AI Academic Mentor Space**. 🎓
+        const welcomeText = `👋 Hello **${studentProfile.name}**! I am your **AI Academic Success Agent** 🎓
 
-I am here to act as your personalized educational counselor. You can use the buttons on the left or type directly to request:
-1. **Career Guidance**: Personalized career recommendations, tech roadmaps, and portfolio projects.
-2. **Study Planner**: Custom schedules and study timetables based on your targets.
-3. **College Predictor**: Suitable colleges tailored to your rank, state, and category.
-4. **Ask a Doubt**: Clear explanations of any concepts or doubts.
+I am configured to act as an autonomous counselor under the **Agents for Good** capstone banner. Instead of a simple chatbot, I proactively monitor your profile data, recommend customized courses, certifications, placement guides, and adapt study planner timetables to suit your exact learning pace.
 
-*Please fill in your preferences on the left sidebar so I can customize my answers to your exact academic profile.*`;
+To begin:
+1. Complete your profile details in the **Success Profile** tab.
+2. Visit the **Insights Dashboard** to monitor strengths, career readiness, and fetch weekly action items.
+3. Check the **Adapt Plans** tab to adapt or replan study schedules when you fall behind.
+
+How can I help you excel in your studies today?`;
 
         appendMessageUI('bot', welcomeText);
     }
 
-    // Save chat message (sync to DB if logged in)
     async function saveChatMessage(sender, message) {
         if (studentProfile.isLoggedIn && studentProfile.email) {
             try {
@@ -296,17 +513,16 @@ I am here to act as your personalized educational counselor. You can use the but
                     })
                 });
             } catch(e) {
-                console.warn("Failed to sync message to backend:", e);
+                console.warn("Failed to save chat message:", e);
             }
         } else {
-            // Save in session storage
             sessionStorage.setItem('mentor_chat_history_guest', JSON.stringify(chatMemory));
         }
     }
 
-    // Append Message to UI
     function appendMessageUI(sender, text, timestamp = new Date()) {
         const container = document.getElementById('mentor-messages-container');
+        if (!container) return;
         
         const msgDiv = document.createElement('div');
         msgDiv.className = `mentor-message ${sender}`;
@@ -317,7 +533,7 @@ I am here to act as your personalized educational counselor. You can use the but
         
         msgDiv.appendChild(bubble);
         
-        // Add "Save Plan" button if bot output contains a study table or plan
+        // Add Save study plan actions
         if (sender === 'bot' && (text.toLowerCase().includes('study plan') || text.toLowerCase().includes('timetable') || text.includes('|'))) {
             const saveBtn = document.createElement('button');
             saveBtn.className = 'btn btn-secondary';
@@ -343,31 +559,25 @@ I am here to act as your personalized educational counselor. You can use the but
         scrollChatBottom();
     }
 
-    // Scroll Chat to the bottom
     function scrollChatBottom() {
         const container = document.getElementById('mentor-messages-container');
-        container.scrollTop = container.scrollHeight;
+        if (container) container.scrollTop = container.scrollHeight;
     }
 
-    // Handle Input Box Keyboard
     window.handleMentorInputKey = function(event) {
         if (event.key === 'Enter') {
             sendMentorMessage();
         }
     };
 
-    // Send Message Triggered by Button/Enter
     window.sendMentorMessage = async function() {
         const input = document.getElementById('mentor-chat-input');
         const text = input.value.trim();
         if (!text || isTyping) return;
 
         input.value = '';
-        
-        // Display user message in UI
         appendMessageUI('user', text);
         
-        // Push user message into memory
         chatMemory.push({
             role: 'user',
             parts: [{ text: text }]
@@ -376,19 +586,16 @@ I am here to act as your personalized educational counselor. You can use the but
             chatMemory = chatMemory.slice(-20);
         }
 
-        // Sync to backend DB
         await saveChatMessage('user', text);
-
-        // Fetch AI Response
         await callGeminiMentorAPI(text);
     };
 
-    // Typing Indicators
     function showTyping() {
         if (isTyping) return;
         isTyping = true;
         
         const container = document.getElementById('mentor-messages-container');
+        if (!container) return;
         const typingDiv = document.createElement('div');
         typingDiv.className = 'mentor-message bot typing-indicator-container';
         typingDiv.id = 'mentor-typing-indicator';
@@ -413,7 +620,6 @@ I am here to act as your personalized educational counselor. You can use the but
         }
     }
 
-    // Clear Memory
     window.clearMentorChat = async function() {
         if (confirm("Are you sure you want to clear your conversation history?")) {
             chatMemory = [];
@@ -436,55 +642,37 @@ I am here to act as your personalized educational counselor. You can use the but
     };
 
     // Call Gemini API
-    async function callGeminiMentorAPI(lastUserMsg) {
+    async function callGeminiMentorAPI(lastUserMsg, overrideSystemPrompt = null) {
         const apiKey = localStorage.getItem('aura_api_key');
         if (!apiKey) {
-            alert("Please configure a Gemini API key first!");
+            alert("Configure your Gemini API key first!");
             return;
         }
 
         showTyping();
-        document.getElementById('mentor-status').textContent = 'Thinking...';
+        const statusSpan = document.getElementById('mentor-status');
+        if (statusSpan) statusSpan.textContent = 'Thinking...';
 
-        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
-        
-        // Compile student profile information
-        const studentInfo = {
-            name: studentProfile.name,
-            dept: studentProfile.dept || localStorage.getItem('mentor_branch' + suffix) || 'Computer Science & Engineering',
-            year: studentProfile.grade || 'unspecified standing',
-            interests: localStorage.getItem('mentor_interests' + suffix) || 'general computing',
-            marks: localStorage.getItem('mentor_marks' + suffix) || 'unspecified GPA',
-            goals: localStorage.getItem('mentor_goals' + suffix) || 'successful software engineering career',
-            examRank: localStorage.getItem('mentor_rank' + suffix) || 'unspecified',
-            state: localStorage.getItem('mentor_state' + suffix) || 'unspecified',
-            category: localStorage.getItem('mentor_category' + suffix) || 'General'
-        };
+        const systemText = overrideSystemPrompt || `You are an autonomous AI Academic Success Agent acting under the "Agents for Good" category. 
+Your goal is to guide students (${studentProfile.name}) in their academic journeys, career goals, study planning, and placements.
+Analyze their Success Profile:
+- Branch: ${successProfile.dept.toUpperCase()}
+- Year Standing: Year ${successProfile.grade}
+- Interests: ${successProfile.interests || 'unspecified'}
+- GPA/Marks: ${successProfile.marks || 'unspecified'}
+- Semester Goals: ${successProfile.goals || 'unspecified'}
+- Weak Areas: ${successProfile.weak_subjects || 'none specified'}
+- Career Aspirations: ${successProfile.target_goals || 'unspecified'}
+- College predictor parameters: category ${successProfile.category}, rank ${successProfile.exam_rank || 'unspecified'}, state ${successProfile.state || 'unspecified'}.
+
+Behavioral Guidelines:
+1. Reason using the student profile. Address them as ${studentProfile.name} in a supportive, mentor-like, encouraging tone.
+2. Provide concrete recommendations. If recommending a project or cert, explain WHY it benefits them.
+3. Reference external directories. Recommend links to local study guides (DSA.html, HTML.html, CSS.html, OS.html, Java.html, Python.html) and references.html when relevant.
+4. Keep memory. Reference previous comments where applicable.`;
 
         const systemInstruction = {
-            parts: [{
-                text: `You are a friendly, highly experienced academic counselor and student mentor at Student Hub.
-Your tone is supportive, encouragement-focused, professional, and student-centric. Provide highly customized, actionable advice.
-
-Student Profile Information (Use this to contextualize your replies, and do NOT make up contradictive academic details):
-- Scholar Name: ${studentInfo.name}
-- Department: ${studentInfo.dept}
-- Year Standing: ${studentInfo.year}
-- Areas of Interest: ${studentInfo.interests}
-- Academic Marks/GPA: ${studentInfo.marks}
-- Career/Academic Goals: ${studentInfo.goals}
-- Exam Rank/Percentile: ${studentInfo.examRank}
-- State/Region of Preference: ${studentInfo.state}
-- Category: ${studentInfo.category}
-
-Instructions:
-1. Provide personalized career guidance based on interest, marks, and goals.
-2. Recommend suitable engineering or degree colleges based on the student's rank, branch, state, and category. Provide realistic predictions (e.g., IITs/NITs, top state colleges, private universities) based on typical admissions thresholds.
-3. Generate structured study plans and daily study schedules. When generating study plans, always include a daily hourly timetable formatted as a markdown table.
-4. Solve conceptual doubts, strategy queries, and other academic problems.
-5. Refer students to check references.html and local guides (HTML.html, CSS.html, DSA.html, SQL.html) when relevant to their query.
-6. Speak directly to the student (${studentInfo.name}). Maintain conversational history and memory.`
-            }]
+            parts: [{ text: systemText }]
         };
 
         try {
@@ -499,7 +687,7 @@ Instructions:
             });
 
             hideTyping();
-            document.getElementById('mentor-status').textContent = 'Ready to assist you';
+            if (statusSpan) statusSpan.textContent = 'Ready';
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -510,108 +698,182 @@ Instructions:
             const botMsg = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
             if (botMsg) {
-                // Save bot reply to memory
                 chatMemory.push({
                     role: 'model',
                     parts: [{ text: botMsg }]
                 });
-                
-                // Display bot reply in UI
                 appendMessageUI('bot', botMsg);
-                
-                // Sync bot message to database
                 await saveChatMessage('bot', botMsg);
             } else {
-                throw new Error("Invalid response format from Gemini API");
+                throw new Error("Invalid response format");
             }
         } catch (e) {
-            console.error("Gemini API Error:", e);
+            console.error(e);
             hideTyping();
-            document.getElementById('mentor-status').textContent = 'Connection error';
-            
-            // Remove user message from chatMemory so it doesn't pollute the prompt sequence
+            if (statusSpan) statusSpan.textContent = 'Error';
             chatMemory.pop();
-
-            appendMessageUI('bot', `🔴 **Mentor Connection Error:** ${e.message}
-            
-Please verify your network connection and confirm that your Gemini API Key is active. Click **Key** in the top right to verify.`);
+            appendMessageUI('bot', `🔴 **Agent Request Error:** ${e.message}`);
         }
     }
 
-    // Quick Action Buttons
+    // Quick Actions
     window.triggerQuickAction = function(actionType) {
-        const suffix = studentProfile.email ? '_' + studentProfile.email.replace(/[^a-zA-Z0-9]/g, '') : '_guest';
-        
-        let promptText = '';
+        let text = '';
         if (actionType === 'career') {
-            const interests = localStorage.getItem('mentor_interests' + suffix) || '';
-            const marks = localStorage.getItem('mentor_marks' + suffix) || '';
-            const goals = localStorage.getItem('mentor_goals' + suffix) || '';
-            
-            promptText = `Can you provide me with personalized career guidance?
-My profile details:
-- Department: ${studentProfile.dept || 'unspecified'}
-- Interests: ${interests || 'general computing'}
-- Marks/GPA: ${marks || 'unspecified'}
-- Goals: ${goals || 'a successful tech career'}
-
-What roles are ideal for me, what skills should I focus on learning, and what projects should I build?`;
+            text = `Provide personalized career guidance based on my success profile. Highlight portfolio projects, online resources, and certifications that match my career goals (${successProfile.target_goals || 'unspecified'}) and weak areas (${successProfile.weak_subjects || 'none'}).`;
         } 
         else if (actionType === 'planner') {
-            const examDate = localStorage.getItem('mentor_exam_date' + suffix) || '';
-            const subjects = localStorage.getItem('mentor_exam_subjects' + suffix) || '';
-            const weakAreas = localStorage.getItem('mentor_weak_areas' + suffix) || '';
-            const hours = localStorage.getItem('mentor_study_hours' + suffix) || '4';
-
-            if (!examDate || !subjects) {
-                alert("Please fill in the 'Study Planner Details' in the sidebar (Exam Date and Subjects) before requesting a study plan!");
+            if (!successProfile.exam_date || !successProfile.exam_subjects) {
+                alert("Please configure default planner defaults (Exam Date and Subjects) in the Success Profile tab first!");
+                switchMentorTab('profile');
                 return;
             }
-
-            promptText = `Please generate a personalized study plan and daily timetable for my upcoming exam.
-Details:
-- Exam Date: ${examDate}
-- Subjects: ${subjects}
-- My Weak Areas: ${weakAreas || 'none specified'}
-- Available study hours per day: ${hours}
-
-Please include a daily study timetable in a tabular markdown layout!`;
+            text = `Generate a personalized study plan default schedule for my exam on ${successProfile.exam_date}. Subjects to cover: ${successProfile.exam_subjects}. Daily hour allocation: ${successProfile.study_hours || '4'} hours. Weak areas to prioritize: ${successProfile.weak_subjects || 'none'}. Format the hourly schedule as a markdown table.`;
         } 
         else if (actionType === 'predictor') {
-            const rank = localStorage.getItem('mentor_rank' + suffix) || '';
-            const branch = localStorage.getItem('mentor_branch' + suffix) || 'cse';
-            const state = localStorage.getItem('mentor_state' + suffix) || '';
-            const category = localStorage.getItem('mentor_category' + suffix) || 'General';
-
-            if (!rank) {
-                alert("Please enter your Exam Rank/Percentile in the College Predictor details in the sidebar first!");
+            if (!successProfile.exam_rank) {
+                alert("Please configure your Exam Rank in the Success Profile tab first!");
+                switchMentorTab('profile');
                 return;
             }
-
-            promptText = `Based on my entrance exam results, can you predict suitable engineering colleges for me?
-Parameters:
-- Rank/Percentile: ${rank}
-- Preferred Branch: ${branch.toUpperCase()}
-- Preferred State: ${state || 'any state'}
-- Admission Category: ${category}
-
-Suggest realistic options ranging from premium, moderate, and fallback options.`;
+            text = `Recommend engineering or graduate colleges based on my rank of ${successProfile.exam_rank}, category ${successProfile.category}, state ${successProfile.state || 'any'}, and preferred branch ${successProfile.dept.toUpperCase()}. Provide realistic predictions (premium, intermediate, and safety options).`;
         } 
         else if (actionType === 'doubt') {
-            promptText = "I have a concept/subject doubt. Can you help me clarify it?";
+            text = `I have an academic doubt about my current subjects. Can you explain key concepts in detail and suggest a study strategy?`;
         }
 
-        if (promptText) {
-            document.getElementById('mentor-chat-input').value = promptText;
+        if (text) {
+            switchMentorTab('chat');
+            document.getElementById('mentor-chat-input').value = text;
             document.getElementById('mentor-chat-input').focus();
         }
     };
 
-    // Save Generated Study Plan
+    // Proactive Recommendations on Dashboard
+    window.fetchProactiveRecommendations = async function() {
+        const apiKey = localStorage.getItem('aura_api_key');
+        if (!apiKey) {
+            alert("Configure your Gemini API key first!");
+            return;
+        }
+
+        const output = document.getElementById('dashboard-recommendations-list');
+        if (!output) return;
+        output.innerHTML = '<p style="text-align: center; color: var(--text-muted);">🤖 Success Agent is analyzing your profile to compile weekly insights...</p>';
+
+        const promptText = `Generate weekly academic goals, suggested learning activities, skill recommendations based on career goals, and placement readiness suggestions.
+Profile:
+- Branch: ${successProfile.dept.toUpperCase()}
+- Year: Year ${successProfile.grade}
+- Interests: ${successProfile.interests}
+- Weak Subjects: ${successProfile.weak_subjects}
+- Career Aspirations: ${successProfile.target_goals}
+
+Return the results as brief, structured bullet points grouped into:
+1. **Weekly Academic Goals**
+2. **Suggested Learning Activities**
+3. **Skill Recommendations**
+4. **Placement Readiness & Exam Prep**`;
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: promptText }] }]
+                })
+            });
+
+            if (!response.ok) throw new Error("API request failed");
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                output.innerHTML = formatMarkdown(text);
+            } else {
+                throw new Error("Invalid output");
+            }
+        } catch (e) {
+            output.innerHTML = `<p style="color: #ef4444; text-align: center;">Error fetching recommendations: ${e.message}</p>`;
+        }
+    };
+
+    // Load Resource recommendations
+    window.fetchMentorResourceRecommendations = async function() {
+        const apiKey = localStorage.getItem('aura_api_key');
+        if (!apiKey) {
+            alert("Configure your Gemini API key first!");
+            return;
+        }
+
+        const output = document.getElementById('resources-recommendation-output');
+        if (!output) return;
+        output.innerHTML = '<p style="text-align: center; color: var(--text-muted);">🤖 Fetching tailored courses, tutorials, and certifications...</p>';
+
+        const promptText = `Recommend tailored online courses, certifications, textbooks, coding practice platforms, and portfolio project ideas based on the following profile. Explain WHY each resource is recommended.
+Profile:
+- Branch: ${successProfile.dept.toUpperCase()}
+- Year: Year ${successProfile.grade}
+- Interests: ${successProfile.interests}
+- Weak Subjects: ${successProfile.weak_subjects}
+- Career Aspirations: ${successProfile.target_goals}
+
+Format with bold headers and structured bullet points.`;
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: promptText }] }]
+                })
+            });
+
+            if (!response.ok) throw new Error("API request failed");
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                output.innerHTML = formatMarkdown(text);
+            } else {
+                throw new Error("Invalid output");
+            }
+        } catch (e) {
+            output.innerHTML = `<p style="color: #ef4444; text-align: center;">Error fetching resources: ${e.message}</p>`;
+        }
+    };
+
+    // Trigger Adaptive Study Plan Re-planning
+    window.triggerAdaptiveReplan = async function() {
+        const missedVal = document.getElementById('adapt-days-missed').value;
+        const progressVal = document.getElementById('adapt-current-status').value.trim();
+
+        if (!successProfile.exam_date || !successProfile.exam_subjects) {
+            alert("Planner defaults (Exam Date and Subjects) must be configured in the Success Profile tab first!");
+            switchMentorTab('profile');
+            return;
+        }
+
+        const replanPrompt = `I need to adapt my study plan and regenerate my daily schedule.
+- I fell behind and missed ${missedVal} days of study.
+- My current milestone progress: ${progressVal || 'No major progress completed yet.'}
+- My target exam date is still: ${successProfile.exam_date}
+- Target subjects: ${successProfile.exam_subjects}
+- Daily study hour allocation: ${successProfile.study_hours || '4'} hours
+- My weak subjects to prioritize: ${successProfile.weak_subjects || 'none'}
+
+Please regenerate my hourly daily timetable study plan, prioritizing weak areas, and distribute the remaining content adaptively. Format the daily schedule as a markdown table!`;
+
+        switchMentorTab('chat');
+        document.getElementById('mentor-chat-input').value = replanPrompt;
+        document.getElementById('mentor-chat-input').focus();
+    };
+
+    // Save Study Plan
     async function saveGeneratedPlan(planText) {
-        let title = prompt("Enter a title for this Study Plan (e.g. 30-Day DSA Plan, Final Exam Timetable):", "My Custom Study Plan");
-        if (title === null) return; // Cancelled
-        title = title.trim() || "My Study Plan";
+        let title = prompt("Enter a title for this Study Plan:", "Adaptive Study Plan");
+        if (title === null) return;
+        title = title.trim() || "Study Plan";
 
         if (studentProfile.isLoggedIn && studentProfile.email) {
             try {
@@ -626,16 +888,18 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
                 });
                 const data = await resp.json();
                 if (data.success) {
-                    alert("Study plan saved successfully!");
+                    const studyPlanCheck = document.getElementById('chk-study-plan');
+                    if (studyPlanCheck) studyPlanCheck.checked = true;
+                    updateConsistency();
+                    alert("Study plan saved to database successfully!");
                     loadSavedPlans();
                 } else {
-                    alert("Failed to save study plan: " + data.message);
+                    alert("Failed to save: " + data.message);
                 }
             } catch (e) {
-                alert("Error saving study plan: " + e.message);
+                alert("Error: " + e.message);
             }
         } else {
-            // Save to localStorage for guest
             const guestPlans = JSON.parse(localStorage.getItem('mentor_study_plans_guest') || '[]');
             guestPlans.unshift({
                 id: Date.now(),
@@ -644,15 +908,21 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
                 created_at: new Date().toISOString()
             });
             localStorage.setItem('mentor_study_plans_guest', JSON.stringify(guestPlans));
-            alert("Study plan saved to local storage (Guest Mode)!");
+            const studyPlanCheck = document.getElementById('chk-study-plan');
+            if (studyPlanCheck) studyPlanCheck.checked = true;
+            updateConsistency();
+            alert("Study plan saved to Guest local storage!");
             loadSavedPlans();
         }
     }
 
-    // Load Saved Study Plans
+    // Load plans
     async function loadSavedPlans() {
         const listContainer = document.getElementById('saved-plans-list');
+        const overviewContainer = document.getElementById('adaptive-saved-plans-overview');
+        if (!listContainer) return;
         listContainer.innerHTML = '';
+        if (overviewContainer) overviewContainer.innerHTML = '';
 
         let plans = [];
         if (studentProfile.isLoggedIn && studentProfile.email) {
@@ -663,18 +933,27 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
                     plans = data.plans || [];
                 }
             } catch(e) {
-                console.warn("Could not load study plans from backend database:", e);
+                console.warn(e);
             }
         } else {
             plans = JSON.parse(localStorage.getItem('mentor_study_plans_guest') || '[]');
         }
 
+        if (plans.length > 0) {
+            const studyPlanCheck = document.getElementById('chk-study-plan');
+            if (studyPlanCheck) studyPlanCheck.checked = true;
+        }
+
         if (plans.length === 0) {
-            listContainer.innerHTML = '<p style="font-size: 11.5px; color: var(--text-muted); margin: 0; text-align: center; padding: 10px 0;">No saved study plans yet.</p>';
+            const emptyText = '<p style="font-size: 11.5px; color: var(--text-muted); margin: 0; text-align: center; padding: 10px 0;">No saved study plans yet.</p>';
+            listContainer.innerHTML = emptyText;
+            if (overviewContainer) overviewContainer.innerHTML = emptyText;
             return;
         }
 
+        // Render in both places
         plans.forEach(plan => {
+            // Sidebar item
             const item = document.createElement('div');
             item.className = 'plan-item';
             
@@ -691,7 +970,7 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             const dateSpan = document.createElement('div');
             dateSpan.className = 'plan-item-date';
             const date = new Date(plan.created_at);
-            dateSpan.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            dateSpan.textContent = date.toLocaleDateString();
             
             info.appendChild(titleSpan);
             info.appendChild(dateSpan);
@@ -702,7 +981,6 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             const viewBtn = document.createElement('button');
             viewBtn.className = 'plan-action-btn';
             viewBtn.innerHTML = '👁️';
-            viewBtn.title = 'View Study Plan';
             viewBtn.addEventListener('click', () => {
                 openPlanViewerModal(plan.title, plan.plan_data);
             });
@@ -710,7 +988,6 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'plan-action-btn delete';
             deleteBtn.innerHTML = '🗑️';
-            deleteBtn.title = 'Delete Plan';
             deleteBtn.addEventListener('click', () => {
                 deletePlan(plan.id);
             });
@@ -721,12 +998,27 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             item.appendChild(info);
             item.appendChild(actions);
             listContainer.appendChild(item);
+
+            // Adaptive view item (copy)
+            if (overviewContainer) {
+                const clone = item.cloneNode(true);
+                // Re-bind events to clone
+                clone.querySelector('.plan-item-info').addEventListener('click', () => {
+                    openPlanViewerModal(plan.title, plan.plan_data);
+                });
+                clone.querySelectorAll('.plan-action-btn')[0].addEventListener('click', () => {
+                    openPlanViewerModal(plan.title, plan.plan_data);
+                });
+                clone.querySelectorAll('.plan-action-btn')[1].addEventListener('click', () => {
+                    deletePlan(plan.id);
+                });
+                overviewContainer.appendChild(clone);
+            }
         });
     }
 
-    // Delete saved plan
     async function deletePlan(planId) {
-        if (!confirm("Are you sure you want to delete this study plan?")) return;
+        if (!confirm("Delete this study plan?")) return;
 
         if (studentProfile.isLoggedIn && studentProfile.email) {
             try {
@@ -735,25 +1027,21 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
                 });
                 const data = await resp.json();
                 if (data.success) {
-                    alert("Study plan deleted successfully.");
+                    alert("Study plan deleted.");
                     loadSavedPlans();
-                } else {
-                    alert("Failed to delete study plan: " + data.message);
                 }
             } catch (e) {
-                alert("Error deleting study plan: " + e.message);
+                alert("Error: " + e.message);
             }
         } else {
-            // Guest Mode
             let guestPlans = JSON.parse(localStorage.getItem('mentor_study_plans_guest') || '[]');
             guestPlans = guestPlans.filter(p => p.id !== planId);
             localStorage.setItem('mentor_study_plans_guest', JSON.stringify(guestPlans));
-            alert("Study plan deleted from local storage.");
+            alert("Deleted plan.");
             loadSavedPlans();
         }
     }
 
-    // Modal controllers for viewing saved plan
     window.openPlanViewerModal = function(title, planText) {
         const modal = document.getElementById('plan-viewer-modal');
         document.getElementById('plan-viewer-title').textContent = title;
@@ -762,8 +1050,7 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
     };
 
     window.closePlanViewerModal = function() {
-        const modal = document.getElementById('plan-viewer-modal');
-        modal.classList.remove('active');
+        document.getElementById('plan-viewer-modal').classList.remove('active');
     };
 
 
@@ -772,18 +1059,17 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
     // ==========================================
 
     function formatMarkdown(text) {
-        // Escape HTML entities to prevent XSS
         let html = text
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
 
-        // Code blocks: ```lang ... ```
+        // Code blocks
         html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
             return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
         });
 
-        // Inline code: `code`
+        // Inline code
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
         // Headers
@@ -803,7 +1089,7 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             return `<ul>${match}</ul>`;
         });
 
-        // Simple Table Parsing
+        // Table Parsing
         const lines = html.split('\n');
         let inTable = false;
         let tableRows = [];
@@ -830,7 +1116,6 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
         }
         html = processedLines.join('\n');
 
-        // Clean newlines in formatted sections
         const preBlocks = [];
         html = html.replace(/<pre>[\s\S]*?<\/pre>/g, function(match) {
             preBlocks.push(match);
@@ -858,17 +1143,13 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
 
     function renderHTMLTable(rows) {
         if (rows.length < 1) return "";
-        
         let html = "<table>";
         let hasHeader = false;
-        
         if (rows.length > 1 && rows[1].includes('-')) {
             hasHeader = true;
         }
-        
         for (let i = 0; i < rows.length; i++) {
-            if (i === 1 && hasHeader) continue; // Skip dashed alignment line
-            
+            if (i === 1 && hasHeader) continue;
             let row = rows[i];
             let cols = row.split('|').map(c => c.trim());
             if (cols[0] === '') cols.shift();
@@ -884,7 +1165,6 @@ Suggest realistic options ranging from premium, moderate, and fallback options.`
             }
             html += "</tr>";
         }
-        
         html += "</table>";
         return html;
     }
