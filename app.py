@@ -303,16 +303,7 @@ def init_db():
             FOREIGN KEY (email) REFERENCES users (email) ON DELETE CASCADE
         )
     ''')
-    # Create chatbot settings table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chatbot_settings (
-            email TEXT PRIMARY KEY,
-            aura_mode TEXT NOT NULL,
-            aura_api_key TEXT,
-            aura_user_name TEXT,
-            FOREIGN KEY (email) REFERENCES users (email) ON DELETE CASCADE
-        )
-    ''')
+
     # Create deleted users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS deleted_users (
@@ -517,13 +508,6 @@ def register_user(email, username, password_hash, grade, dept):
         }
         res = supabase_request("POST", "users", body=user_body)
         if res:
-            settings_body = {
-                "email": email,
-                "aura_mode": "offline",
-                "aura_api_key": "",
-                "aura_user_name": username
-            }
-            supabase_request("POST", "chatbot_settings", body=settings_body)
             return True
         return False
 
@@ -533,10 +517,6 @@ def register_user(email, username, password_hash, grade, dept):
         cursor.execute(
             'INSERT INTO users (email, username, password, grade, dept) VALUES (?, ?, ?, ?, ?)',
             (email, username, password_hash, grade, dept)
-        )
-        cursor.execute(
-            'INSERT INTO chatbot_settings (email, aura_mode, aura_api_key, aura_user_name) VALUES (?, ?, ?, ?)',
-            (email, 'offline', '', username)
         )
         conn.commit()
         return True
@@ -589,61 +569,7 @@ def update_user_progress(email, checkpoint_id, checked):
     finally:
         conn.close()
 
-def get_chatbot_settings(email):
-    email = email.strip().lower()
-    if is_supabase_enabled():
-        res = supabase_request("GET", "chatbot_settings", f"email=ilike.{email}", single=True)
-        if res:
-            return {
-                'aura_mode': res['aura_mode'],
-                'aura_api_key': res.get('aura_api_key', ''),
-                'aura_user_name': res.get('aura_user_name', '')
-            }
-        return None
 
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT aura_mode, aura_api_key, aura_user_name FROM chatbot_settings WHERE LOWER(email) = ?', (email,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return {
-            'aura_mode': row['aura_mode'],
-            'aura_api_key': row['aura_api_key'],
-            'aura_user_name': row['aura_user_name']
-        }
-    return None
-
-def save_chatbot_settings(email, aura_mode, aura_api_key, aura_user_name):
-    email = email.strip().lower()
-    if is_supabase_enabled():
-        settings_body = {
-            "email": email,
-            "aura_mode": aura_mode,
-            "aura_api_key": aura_api_key,
-            "aura_user_name": aura_user_name
-        }
-        exists = supabase_request("GET", "chatbot_settings", f"email=ilike.{email}", single=True)
-        if exists:
-            supabase_request("PATCH", "chatbot_settings", f"email=ilike.{email}", body=settings_body)
-        else:
-            supabase_request("POST", "chatbot_settings", body=settings_body)
-        return True
-
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('''
-            INSERT OR REPLACE INTO chatbot_settings (email, aura_mode, aura_api_key, aura_user_name)
-            VALUES (?, ?, ?, ?)
-        ''', (email, aura_mode, aura_api_key, aura_user_name))
-        conn.commit()
-        return True
-    except sqlite3.Error as e:
-        print(f"SQLite save_chatbot_settings error: {e}")
-        return False
-    finally:
-        conn.close()
 
 def reactivate_user(email, username, password_hash, grade, dept):
     email = email.strip().lower()

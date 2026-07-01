@@ -10,7 +10,6 @@ Student Hub is a modern, responsive academic workspace for curriculum tracking, 
 
 * **Dynamic Curriculum Path**: Select your department and year to dynamically render a custom syllabus path.
 * **Progress Tracking**: Tick off syllabus topics to update your visual progress meter in real-time.
-* **Aura AI Tutor**: Chatbot assistant with custom offline/online settings.
 * **Hybrid Google Sign-In**: Integrated Google Auth with backend token validation (and simulated fallback for local testing).
 * **Responsive Styling**: Fully optimized glassmorphic layout consistent across desktop, tablet, and mobile displays.
 

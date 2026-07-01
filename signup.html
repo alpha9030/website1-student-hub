@@ -256,18 +256,6 @@
                             console.warn("Could not sync progress from backend:", e);
                         }
 
-                        // Load chatbot settings from backend
-                        try {
-                            const chatResp = await fetch(`${apiBase}/api/chatbot?email=${encodeURIComponent(foundUser.email)}`);
-                            const chatData = await chatResp.json();
-                            if (chatData.success && chatData.settings) {
-                                localStorage.setItem('aura_mode', chatData.settings.aura_mode);
-                                localStorage.setItem('aura_api_key', chatData.settings.aura_api_key);
-                                localStorage.setItem('aura_user_name', chatData.settings.aura_user_name);
-                            }
-                        } catch (e) {
-                            console.warn("Could not sync chatbot settings:", e);
-                        }
 
                         // Also add/update local registeredUsers list for offline admin panel
                         let localUsers = [];
@@ -835,17 +823,7 @@
                     console.warn("Could not sync progress from backend:", e);
                 }
                 
-                try {
-                    const chatResp = await fetch(`${apiBase}/api/chatbot?email=${encodeURIComponent(user.email)}`);
-                    const chatData = await chatResp.json();
-                    if (chatData.success && chatData.settings) {
-                        localStorage.setItem('aura_mode', chatData.settings.aura_mode);
-                        localStorage.setItem('aura_api_key', chatData.settings.aura_api_key);
-                        localStorage.setItem('aura_user_name', chatData.settings.aura_user_name);
-                    }
-                } catch(e) {
-                    console.warn("Could not sync chatbot settings:", e);
-                }
+
             }
             
             let users = [];

@@ -61,15 +61,7 @@ CREATE TABLE progress (
     PRIMARY KEY (email, checkpoint_id)
 );
 
--- 3. Create CHATBOT_SETTINGS table
-CREATE TABLE chatbot_settings (
-    email TEXT PRIMARY KEY REFERENCES users(email) ON DELETE CASCADE,
-    aura_mode TEXT NOT NULL,
-    aura_api_key TEXT,
-    aura_user_name TEXT
-);
-
--- 4. Create DELETED_USERS table
+-- 3. Create DELETED_USERS table
 CREATE TABLE deleted_users (
     email TEXT PRIMARY KEY,
     username TEXT NOT NULL,
