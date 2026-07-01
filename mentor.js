@@ -634,6 +634,7 @@ closeMentorKeyModal();
     let autoTTS = false;
     let recognition = null;
     let isRecording = false;
+    let lastWikiContext = "";
 
     // Expose functions to window object
     window.toggleAuraSidebar = function() {
@@ -1557,6 +1558,7 @@ How can I help you today?`;
 
     // Tool Call rendering
     function appendToolCallUI(name, args, completed = false) {
+        if (name === 'web_search') return; // Hide Wikipedia tool call from user
         const container = document.getElementById('mentor-messages-container');
         if (!container) return;
         
@@ -1590,6 +1592,7 @@ How can I help you today?`;
     }
 
     function updateToolCallUI(name, result) {
+        if (name === 'web_search') return; // Hide Wikipedia tool call from user
         const container = document.getElementById('mentor-messages-container');
         if (!container) return;
         
@@ -1690,6 +1693,36 @@ How can I help you today?`;
         return { error: `Unknown tool: ${name}` };
     }
 
+    async function fetchWikipediaContext(query) {
+        const simpleGreetings = ['hello', 'hi', 'hey', 'greetings', 'clear', 'exit', 'bye', 'thank you', 'thanks'];
+        const cleanQuery = query.toLowerCase().trim();
+        if (cleanQuery.length < 3 || simpleGreetings.includes(cleanQuery)) {
+            return null;
+        }
+        try {
+            const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+            const searchResp = await fetch(searchUrl);
+            if (!searchResp.ok) return null;
+            const searchData = await searchResp.json();
+            const results = searchData.query?.search || [];
+            if (results.length === 0) return null;
+            
+            const bestTitle = results[0].title;
+            const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestTitle.replace(/\s+/g, '_'))}`;
+            const summaryResp = await fetch(summaryUrl);
+            if (!summaryResp.ok) return null;
+            const summaryData = await summaryResp.json();
+            return {
+                title: summaryData.title,
+                extract: summaryData.extract,
+                url: summaryData.content_urls?.desktop?.page
+            };
+        } catch(e) {
+            console.warn("Silent Wikipedia fetch failed:", e);
+            return null;
+        }
+    }
+
     // Call Gemini API (stream reader loop)
     async function callGeminiMentorAPI(lastUserMsg, overrideSystemPrompt = null) {
         const apiKey = localStorage.getItem('aura_api_key');
@@ -1702,6 +1735,18 @@ How can I help you today?`;
         const statusSpan = document.getElementById('mentor-status');
         if (statusSpan) statusSpan.textContent = 'Thinking...';
 
+        lastWikiContext = "";
+        try {
+            const wikiData = await fetchWikipediaContext(lastUserMsg);
+            if (wikiData) {
+                lastWikiContext = `\n\n[Wikipedia Search Knowledge Context for "${wikiData.title}":
+${wikiData.extract}
+Source: ${wikiData.url}]`;
+            }
+        } catch(e) {
+            console.warn("Wikipedia pre-fetch error:", e);
+        }
+
         const systemText = `You are Aura, an autonomous AI Success Agent and general-purpose conversational assistant.
 A unique symbol for Aura is: ✧ Aura ✧ (representing glowing guidance).
 Your goal is to guide students (${studentProfile.name}) in their academic journeys, career goals, study planning, and general inquiries.
@@ -1709,7 +1754,7 @@ Always behave as a modern, friendly, and highly capable conversational AI.
 You have tools available: web_search, calculator, execute_code, generate_image, read_file.
 If you need any information, perform a web_search or run calculations automatically.
 If requested to generate an image, call generate_image and output the resulting Markdown image tag in your response: ![generated image](image_url).
-Always respond with beautiful, readable Markdown including code blocks, lists, headings, and bold text.`;
+Always respond with beautiful, readable Markdown including code blocks, lists, headings, and bold text.${lastWikiContext ? lastWikiContext + '\nUse the provided Wikipedia context as your primary source of facts for answering, integrating it naturally under your persona without mentioning a Wikipedia tool was run in the background.' : ''}`;
 
         const system_instruction = {
             parts: [{ text: systemText }]
@@ -1912,7 +1957,7 @@ Always behave as a modern, friendly, and highly capable conversational AI.
 You have tools available: web_search, calculator, execute_code, generate_image, read_file.
 If you need any information, perform a web_search or run calculations automatically.
 If requested to generate an image, call generate_image and output the resulting Markdown image tag in your response: ![generated image](image_url).
-Always respond with beautiful, readable Markdown including code blocks, lists, headings, and bold text.`;
+Always respond with beautiful, readable Markdown including code blocks, lists, headings, and bold text.${lastWikiContext ? lastWikiContext + '\nUse the provided Wikipedia context as your primary source of facts for answering, integrating it naturally under your persona without mentioning a Wikipedia tool was run in the background.' : ''}`;
 
         const system_instruction = { parts: [{ text: systemText }] };
         const tools = [
