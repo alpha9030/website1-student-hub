@@ -1409,6 +1409,7 @@ How can I help you today?`;
     function updateActiveConversationHistory() {
         const activeChat = conversations.find(c => c.id === activeConversationId);
         if (activeChat) {
+            chatMemory = sanitizeChatHistory(chatMemory);
             activeChat.messages = chatMemory;
             activeChat.timestamp = new Date().toISOString();
             saveFoldersAndConversations();
@@ -1723,6 +1724,39 @@ How can I help you today?`;
         }
     }
 
+    function sanitizeChatHistory(history) {
+        if (!Array.isArray(history) || history.length === 0) return [];
+        let sanitized = [];
+        let lastRole = null;
+        for (let i = 0; i < history.length; i++) {
+            const msg = history[i];
+            if (!msg || !msg.role || !Array.isArray(msg.parts) || msg.parts.length === 0) continue;
+            let currentRole = msg.role;
+            if (currentRole === 'bot') currentRole = 'model';
+            if (sanitized.length === 0) {
+                if (currentRole !== 'user') continue;
+            }
+            if (currentRole === lastRole) {
+                if (currentRole === 'user') {
+                    const prevMsg = sanitized[sanitized.length - 1];
+                    prevMsg.parts = [...prevMsg.parts, ...msg.parts];
+                } else {
+                    sanitized[sanitized.length - 1] = {
+                        role: currentRole,
+                        parts: msg.parts
+                    };
+                }
+            } else {
+                sanitized.push({
+                    role: currentRole,
+                    parts: msg.parts
+                });
+                lastRole = currentRole;
+            }
+        }
+        return sanitized;
+    }
+
     // Call Gemini API (stream reader loop)
     async function callGeminiMentorAPI(lastUserMsg, overrideSystemPrompt = null) {
         const apiKey = localStorage.getItem('aura_api_key');
@@ -1844,7 +1878,7 @@ Always respond with beautiful, readable Markdown including code blocks, lists, h
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: chatMemory,
+                    contents: sanitizeChatHistory(chatMemory),
                     system_instruction: system_instruction,
                     tools: tools
                 })
@@ -2025,7 +2059,7 @@ Always respond with beautiful, readable Markdown including code blocks, lists, h
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: chatMemory,
+                        contents: sanitizeChatHistory(chatMemory),
                         system_instruction: system_instruction,
                         tools: tools
                     })
