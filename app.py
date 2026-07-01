@@ -1,4 +1,5 @@
 import os
+import time
 import sqlite3
 import hashlib
 import re
@@ -1492,4 +1493,8 @@ init_db()
 
 if __name__ == '__main__':
     print("Database initialized.")
-    app.run(host='0.0.0.0', port=443, ssl_context='adhoc', debug=True)
+    port = int(os.environ.get('PORT', 443))
+    if 'PORT' in os.environ:
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        app.run(host='0.0.0.0', port=port, ssl_context='adhoc', debug=True)
