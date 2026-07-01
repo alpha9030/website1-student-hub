@@ -858,7 +858,7 @@ Behavioral Guidelines:
 3. Reference external directories. Recommend links to local study guides (DSA.html, HTML.html, CSS.html, OS.html, Java.html, Python.html) and references.html when relevant.
 4. Keep memory. Reference previous comments where applicable.`;
 
-        const systemInstruction = {
+        const system_instruction = {
             parts: [{ text: systemText }]
         };
 
@@ -869,7 +869,7 @@ Behavioral Guidelines:
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: chatMemory,
-                    systemInstruction: systemInstruction
+                    system_instruction: system_instruction
                 })
             });
 
